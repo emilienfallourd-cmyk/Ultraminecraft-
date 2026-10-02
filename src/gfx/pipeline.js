@@ -249,6 +249,7 @@ export class Pipeline {
   render(st) {
     const r = this.renderer, U = this.U, cam = this.camera, S = this.settings;
     this.frame++;
+    r.info.autoReset = false; r.info.reset(); // statistiques sur toute l'image (F3)
     cam.updateMatrixWorld();
     U.uCamPos.value.copy(cam.position);
 

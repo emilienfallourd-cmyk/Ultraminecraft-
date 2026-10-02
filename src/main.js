@@ -121,4 +121,9 @@ const App = {
 };
 
 window.App = App;
+// Ctrl+W (courir + avancer) ferme l'onglet dans les navigateurs : demander confirmation
+addEventListener('beforeunload', (e) => {
+  const g = App.game;
+  if (g && g.running && !g.demo) { g.saveGame(); e.preventDefault(); e.returnValue = ''; }
+});
 App.boot();

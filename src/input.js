@@ -26,6 +26,8 @@ export class Input {
     addEventListener('keydown', (e) => {
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
       if (['Space', 'ArrowUp', 'ArrowDown', 'Tab', 'F1', 'F3', 'F5', 'Quote', 'Slash'].includes(e.code)) e.preventDefault();
+      // Ctrl sert à courir : bloquer les raccourcis du navigateur qui peuvent l'être (Ctrl+D, Ctrl+S…)
+      if (e.ctrlKey && !this.uiOpen && e.code !== 'ControlLeft' && e.code !== 'ControlRight') e.preventDefault();
       if (!this.keys.has(e.code)) {
         this.pressed.add(e.code);
         const now = performance.now();
@@ -46,14 +48,28 @@ export class Input {
     });
     addEventListener('mouseup', (e) => { this.buttons &= ~(1 << e.button); });
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    this.avgMove = 0;
+    this.skipMoves = 0;
     addEventListener('mousemove', (e) => {
       if (this.locked || (this.dragLook && (this.buttons & 1) === 0 && e.buttons & 4)) {
-        this.mouseDX += e.movementX || 0; this.mouseDY += e.movementY || 0;
+        const dx = e.movementX || 0, dy = e.movementY || 0;
+        if (this.skipMoves > 0) { this.skipMoves--; return; }
+        // Chrome envoie parfois sous verrouillage un déplacement énorme et faux
+        // (demi-tour soudain de la caméra) : on écarte ces valeurs aberrantes
+        const mag = Math.abs(dx) + Math.abs(dy);
+        if (mag > 200 && mag > this.avgMove * 5 + 80) return;
+        this.avgMove = this.avgMove * 0.75 + mag * 0.25;
+        this.mouseDX += dx; this.mouseDY += dy;
       }
     });
-    addEventListener('wheel', (e) => { if (!this.uiOpen) this.wheel += Math.sign(e.deltaY); }, { passive: true });
+    addEventListener('wheel', (e) => {
+      // Ctrl (courir) + molette = zoom du navigateur : bloqué pendant la partie
+      if (e.ctrlKey || !this.uiOpen) e.preventDefault();
+      if (!this.uiOpen) this.wheel += Math.sign(e.deltaY);
+    }, { passive: false });
     document.addEventListener('pointerlockchange', () => {
       this.locked = document.pointerLockElement === canvas;
+      if (this.locked) { this.skipMoves = 2; this.avgMove = 0; }
       if (this.onLockChange) this.onLockChange(this.locked);
     });
     document.addEventListener('pointerlockerror', () => {
@@ -64,11 +80,19 @@ export class Input {
   }
 
   requestLock() {
-    if (this.touch) return;
+    if (this.touch || !this.canvas.requestPointerLock) return;
+    const c = this.canvas;
+    const plain = () => {
+      try {
+        const p = c.requestPointerLock();
+        if (p && p.catch) p.catch(() => { this.dragLook = true; });
+      } catch (e) { this.dragLook = true; }
+    };
+    // mouvements bruts de la souris (sans accélération du système) quand c'est possible
     try {
-      const p = this.canvas.requestPointerLock && this.canvas.requestPointerLock();
-      if (p && p.catch) p.catch(() => { this.dragLook = true; });
-    } catch (e) { this.dragLook = true; }
+      const p = c.requestPointerLock({ unadjustedMovement: true });
+      if (p && p.catch) p.catch((err) => { if (err && err.name === 'NotSupportedError') plain(); else this.dragLook = true; });
+    } catch (e) { plain(); }
   }
   exitLock() { if (document.pointerLockElement) document.exitPointerLock(); }
 

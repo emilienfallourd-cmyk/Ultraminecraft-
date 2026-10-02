@@ -383,10 +383,11 @@ export class World {
     this.propagate(this.addQ, false);
     if (this.hasSky) this.propagate(this.skyQ, true);
     for (let s = 0; s < SECTIONS; s++) { c.sections[s].dirty = true; this.dirty.add(c.key * 16 + s); }
-    // les voisins doivent remailler leurs bords
+    // les voisins déjà maillés doivent remailler leurs bords (rare : on attend
+    // normalement que tous les voisins soient éclairés avant de mailler)
     for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       const nc = this.getChunk(c.cx + dx, c.cz + dz);
-      if (nc && nc.state >= ST_LIT) for (let s = 0; s < SECTIONS; s++) if (nc.sections[s].count) this.markSection(nc.cx, nc.cz, s);
+      if (nc && nc.state >= ST_LIT && nc.meshedOnce) for (let s = 0; s < SECTIONS; s++) if (nc.sections[s].count) this.markSection(nc.cx, nc.cz, s);
     }
     this.stats.lit++;
     if (this.onLit) this.onLit(c);
@@ -531,14 +532,27 @@ export class World {
         this.initLight(c);
       }
     }
-    // 5) maillage des sections sales
+    // 5) maillage des sections sales — une section n'est maillée que lorsque ses
+    // voisins sont définitifs, pour ne pas la reconstruire à chaque voisin chargé
     if (this.dirty.size) {
       const arr = [];
+      const ready = new Map();
+      const lightR2 = (R - 0.5) * (R - 0.5);
       for (const k of this.dirty) {
         const ck = Math.floor(k / 16), sy = k - ck * 16;
+        let ok = ready.get(ck);
         const cx = Math.floor(ck / 0x10000) - 0x8000, cz = (ck % 0x10000) - 0x8000;
-        const dx = cx - pcx, dz = cz - pcz;
-        arr.push([dx * dx + dz * dz + Math.abs(sy - this.centerSy) * 0.3, k, cx, cz, sy]);
+        const dx = cx - pcx, dz = cz - pcz, d2 = dx * dx + dz * dz;
+        if (ok === undefined) {
+          const c = this.getChunk(cx, cz);
+          if (!c) ok = -1;
+          else if (c.state < ST_LIT) ok = 0;
+          else ok = (c.meshedOnce || this.neighborsAtLeast(c, d2 <= lightR2 ? ST_LIT : ST_DECORATED)) ? 1 : 0;
+          ready.set(ck, ok);
+        }
+        if (ok < 0) { this.dirty.delete(k); continue; }
+        if (!ok) continue;
+        arr.push([d2 + Math.abs(sy - this.centerSy) * 0.3, k, cx, cz, sy]);
       }
       arr.sort((a, b) => a[0] - b[0]);
       for (const [, k, cx, cz, sy] of arr) {

@@ -131,6 +131,15 @@ export class HUD {
     if (this.titleT !== undefined) { this.titleT -= dt; if (this.titleT <= 0) { $('#title').classList.remove('show'); this.titleT = undefined; } }
     if (this.actionT !== undefined) { this.actionT -= dt; if (this.actionT <= 0) { $('#actionbar').classList.remove('show'); this.actionT = undefined; } }
   }
+  gpuName() {
+    if (this._gpu) return this._gpu;
+    try {
+      const gl = this.game.pipeline.renderer.getContext();
+      const ext = gl.getExtension('WEBGL_debug_renderer_info');
+      this._gpu = String(ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER)).replace(/[<>&]/g, '').replace(/^ANGLE \((.*)\)$/, '$1').slice(0, 70);
+    } catch (e) { this._gpu = '?'; }
+    return this._gpu;
+  }
   renderDebug() {
     const g = this.game, p = g.player, w = g.world, r = g.pipeline.renderer.info;
     const bx = Math.floor(p.x), by = Math.floor(p.y), bz = Math.floor(p.z);
@@ -153,6 +162,7 @@ export class HUD {
       `Entités : ${g.entities.list.length}   Particules : ${g.particles.p.length}`,
       t ? `Visé : ${BLOCKS[t.id].name} [${BLOCKS[t.id].key}] @ ${t.x} ${t.y} ${t.z}` : '',
       `Mode : ${['Survie', 'Créatif', '', 'Spectateur'][p.gamemode]}`,
+      `Carte graphique : ${this.gpuName()}`,
     ];
     $('#debug').innerHTML = lines.filter(Boolean).map((s) => `<span>${s}</span>`).join('\n');
   }

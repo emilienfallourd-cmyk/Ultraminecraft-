@@ -867,7 +867,7 @@ export function naturalSpawn(game) {
   const L = game.entities.list;
   let hostile = 0, passive = 0, water = 0, ambient = 0;
   for (const e of L) {
-    if (!e.mobType || e.dead) continue;
+    if (!e.mobType || e.dead || !e.def) continue;
     if (e.hostile || (e.neutral && game.dim === 1)) hostile++;
     else if (e.def.kind === 'water') water++;
     else if (e.def.kind === 'bat') ambient++;

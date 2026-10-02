@@ -17,8 +17,8 @@ export function computeEnvironment(time, dim, rain, thunder, flash, out) {
   if (dim === 1) { // Nether
     out.lightDir = [0.3, 1, 0.2];
     out.sunColor = [0, 0, 0];
-    out.ambient = [0.42, 0.2, 0.14];
-    out.fog = [0.22, 0.04, 0.03];
+    out.ambient = [0.44, 0.26, 0.19];
+    out.fog = [0.24, 0.05, 0.035];
     out.minLight = 0.02;
     out.stars = 0; out.daylight = 0.3;
     out.shadowLight = false;
@@ -27,8 +27,8 @@ export function computeEnvironment(time, dim, rain, thunder, flash, out) {
   }
   if (dim === 2) { // End
     out.lightDir = [0.35, 0.85, 0.4];
-    out.sunColor = [0.12, 0.09, 0.16];
-    out.ambient = [0.2, 0.16, 0.26];
+    out.sunColor = [0.42, 0.39, 0.46];
+    out.ambient = [0.4, 0.38, 0.42];
     out.fog = [0.035, 0.025, 0.05];
     out.minLight = 0.015;
     out.stars = 0; out.daylight = 0.25;

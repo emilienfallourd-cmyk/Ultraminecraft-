@@ -93,15 +93,18 @@ uniform sampler2D uSkyLUT;
 uniform float uFlicker;
 float D_GGX(float NdH, float r){ float a = r*r; float a2 = a*a; float d = NdH*NdH*(a2-1.0)+1.0; return a2 / (PI*d*d + 1e-5); }
 vec3 F_Schlick(vec3 f0, float c){ return f0 + (1.0 - f0) * pow(1.0 - c, 5.0); }
+// motif de caustiques borné dans [0, 2] (aucune division par zéro possible)
 float caustics(vec2 p, float t){
-  vec2 i = p; float c = 1.0; float inten = 0.005;
+  p = mod(p, 6.2831853) - 250.0; // tuile quasi sans couture (motif périodique)
+  vec2 i = p; float c = 1.0; const float inten = 0.005;
   for (int n = 0; n < 4; n++) {
     float t2 = t * (1.0 - (3.5 / float(n + 1)));
     i = p + vec2(cos(t2 - i.x) + sin(t2 + i.y), sin(t2 - i.y) + cos(t2 + i.x));
-    c += 1.0 / length(vec2(p.x / (sin(i.x + t2) / inten), p.y / (cos(i.y + t2) / inten)));
+    vec2 q = vec2(p.x * inten / (abs(sin(i.x + t2)) + 1e-3), p.y * inten / (abs(cos(i.y + t2)) + 1e-3));
+    c += 1.0 / max(length(q), 1e-3);
   }
-  c /= 4.0; c = 1.17 - pow(c, 1.4);
-  return pow(abs(c), 8.0);
+  c = 1.17 - pow(clamp(c / 4.0, 0.0, 1.17), 1.4);
+  return min(pow(max(c, 0.0), 8.0), 2.0);
 }
 // Éclairage complet d'une surface
 vec3 shade(vec3 albedo, vec3 N, vec3 geoN, vec3 wp, vec3 V, float sky, float blk, float ao, float smoothness, float emissive, float extraShadow, bool underwater, float dither){
@@ -115,7 +118,7 @@ vec3 shade(vec3 albedo, vec3 N, vec3 geoN, vec3 wp, vec3 V, float sky, float blk
   sh *= extraShadow;
   if (uDim < 0.5) sh *= cloudShadowAt(wp, uSunDir);
   vec3 direct = uSunColor * NdotL * sh;
-  if (underwater) direct *= 0.35 + caustics(wp.xz * 0.9 + wp.y * 0.2, uTime * 0.6) * 1.6;
+  if (underwater) direct *= 0.3 + caustics(wp.xz * 0.9 + wp.y * 0.2, uTime * 0.6) * 0.6;
   vec3 hemi = mix(uSkyAmbient * 0.45, uSkyAmbient, N.y * 0.5 + 0.5);
   vec3 amb = hemi * skyL;
   float b = blk * blk * (1.0 + uFlicker * 0.08);
@@ -453,7 +456,8 @@ void main(){
       N = normalize(geoN + vec3(geoN.z, 0.0, -geoN.x) * (h2 - h1) * 6.0 + vec3(0.0, (h1 - 0.5) * 0.3, 0.0));
     }
     bool fromBelow = dot(V, geoN) < 0.0;
-    vec3 waterTint = vTint.rgb;
+    // teinte du biome atténuée : l'eau réelle diffuse un bleu-vert, jamais un bleu pur
+    vec3 waterTint = mix(vec3(dot(vTint.rgb, vec3(0.3, 0.5, 0.2))), vTint.rgb, 0.45);
     // réfraction
     vec2 roff = N.xz * 0.035 * clamp(1.0 / (length(uCamPos - vWorldPos) * 0.08 + 0.3), 0.15, 1.5);
     vec2 ruv = clamp(suv + roff, 0.001, 0.999);
@@ -463,9 +467,9 @@ void main(){
     float thick = max(linDepth(rd) - linDepth(gl_FragCoord.z), 0.0);
     if (rd >= 0.99999) thick = 60.0;
     if (fromBelow || uCamUnderwater > 0.5) thick = min(thick, 1.0);
-    vec3 absorbC = vec3(0.42, 0.11, 0.075) * (1.6 - waterTint * 0.9);
+    vec3 absorbC = vec3(0.45, 0.1, 0.07) * (1.3 - waterTint * 0.5);
     vec3 trans = exp(-absorbC * thick);
-    vec3 scatterC = waterTint * waterTint * vec3(0.18, 0.32, 0.38);
+    vec3 scatterC = vec3(0.025, 0.075, 0.09) * (0.6 + waterTint * 0.8);
     vec3 amb = uSkyAmbient * skyL + uBlockColor * blk * blk * 0.6 + uMinLight;
     float sunUp = max(uSunDir.y, 0.0);
     vec3 inscatter = scatterC * (amb * 1.3 + uSunColor * sunUp * 0.35 * smoothstep(0.4, 0.9, sky));
@@ -821,7 +825,9 @@ void main(){
   }
   col += vol;
   if (uBlindness > 0.0) col *= mix(1.0, exp(-dist * 0.25), uBlindness);
-  gl_FragColor = vec4(col, 1.0);
+  // garde-fou : jamais de NaN/infini dans la chaîne HDR (sinon le bloom les propage)
+  if (any(isnan(col)) || any(isinf(col))) col = vec3(0.0);
+  gl_FragColor = vec4(min(col, vec3(500.0)), 1.0);
 }
 `;
 

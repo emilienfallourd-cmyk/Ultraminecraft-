@@ -170,10 +170,10 @@ export class Game {
         this.world.update(40);
         // prêt quand les tronçons autour du joueur sont éclairés et maillés
         const pcx = Math.floor(p.x) >> 4, pcz = Math.floor(p.z) >> 4;
-        let ready = this.world.dirty.size < 4;
+        let ready = true;
         for (let dx = -1; dx <= 1 && ready; dx++) for (let dz = -1; dz <= 1 && ready; dz++) {
           const c = this.world.getChunk(pcx + dx, pcz + dz);
-          if (!c || c.state < 3 || !c.meshedOnce) ready = false;
+          if (!c || c.state < 3 || !c.meshedOnce || c.sections.some((s) => s.dirty)) ready = false;
         }
         const prog = Math.min(1, (this.world.stats.lit) / 25);
         if (!this.demo) this.ui.showLoading('Génération du terrain…', prog);
@@ -437,7 +437,7 @@ export class Game {
       this.portals.tickPlayer(p);
     } else { p.deathTime++; }
     w.runTicks();
-    w.randomTicks(Math.floor(p.x), Math.floor(p.z), 6, 3);
+    w.randomTicks(Math.floor(p.x), Math.floor(p.z), 4, 3);
     this.entities.tick();
     this.tickFurnaces();
     this.tickSpawners();

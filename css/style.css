@@ -124,6 +124,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0b0d; col
 .field input[type=range] { width: 100%; accent-color: #8a8fc4; }
 .opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; max-width: 620px; }
 .opt-grid .btn, .opt-grid .field { max-width: none; }
+.opt-grid .btn { font-size: 21px; line-height: 1.1; }
+.menu-box:has(.opt-grid) { width: min(700px, 96vw); }
 .world-list { width: 100%; max-width: 520px; max-height: 50vh; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; background: rgba(0, 0, 0, 0.45); padding: 6px; border: 2px solid #000; }
 .world { padding: 6px 8px; border: 2px solid transparent; cursor: pointer; }
 .world:hover, .world.sel { border-color: #a0a0a0; background: rgba(255, 255, 255, 0.06); }
