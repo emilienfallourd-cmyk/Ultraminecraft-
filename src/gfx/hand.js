@@ -16,7 +16,7 @@ const DISPLAY_BLOCK = { t: [-0.1, 0.27, 0], r: [8, 45, 0], s: 0.25 };
 const DISPLAY_BOW = { t: [-0.18, 0.28, 0.05], r: [0, 95, -40], s: 0.48 };
 // objets brillants (métal, gemmes) : léger reflet spéculaire
 const SHINY = /(diamond|iron|gold|netherite|emerald|chainmail|shears|compass|clock|bucket|trident|spyglass|amethyst|prismarine|nether_star|ender_pearl|ender_eye|totem)/;
-const FLAT_MODELS = ['torch', 'ladder', 'vine', 'crop', 'door', 'rail', 'lever', 'pane', 'bars', 'carpet'];
+const FLAT_MODELS = ['torch', 'ladder', 'vine', 'crop', 'door', 'rail', 'pane', 'bars', 'carpet'];
 
 const TONE = /* glsl */`
 vec3 aces(vec3 x){ const float a = 2.51, b = 0.03, c = 2.43, d = 0.59, e = 0.14; return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0); }

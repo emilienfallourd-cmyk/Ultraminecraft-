@@ -78,7 +78,8 @@ export class OverworldGen {
     } else if (t < -0.2) {
       biome = u > -0.15 ? BI.taiga : BI.plains;
     } else if (t < 0.25) {
-      if (u < -0.35) biome = weird > 0.5 ? BI.sunflower_plains : BI.plains;
+      if (t < 0.1 && u > -0.3 && u < 0.4 && weird < -0.05) biome = BI.autumn_forest;
+      else if (u < -0.35) biome = weird > 0.5 ? BI.sunflower_plains : BI.plains;
       else if (u < 0.05) biome = weird > 0.45 ? BI.flower_forest : BI.forest;
       else if (u < 0.35) biome = BI.birch_forest;
       else biome = h <= SEA_LEVEL + 4 ? BI.swamp : BI.dark_forest;
@@ -379,7 +380,13 @@ export class OverworldGen {
         else if (bio === BI.cherry_grove) { gChance = 0.25; fChance = 0.0; }
         else if (bio === BI.windswept_hills) { gChance = 0.15; }
         else if (bio === BI.mushroom_fields) { gChance = 0; fChance = 0; }
+        else if (bio === BI.autumn_forest) { gChance = 0.12; fChance = 0.003; tallChance = 0.02; }
         if (bio === BI.cherry_grove && r < 0.12) { blocks[above] = K.pink_petals; continue; }
+        if (bio === BI.autumn_forest) {
+          if (r < 0.3) { blocks[above] = K.leaf_litter; continue; }
+          if (r > 0.986) { const q = rng.next(); blocks[above] = q < 0.55 ? K.pumpkin : q < 0.8 ? K.brown_mushroom : K.red_mushroom; continue; }
+          if (r > 0.975 && r <= 0.986) { blocks[above] = K.sweet_berry_bush; meta[above] = 3; continue; }
+        }
         if (r < fChance) {
           const fk = this.flowerFor(bio, wx, wz, rng);
           if (fk.endsWith('_top')) continue;

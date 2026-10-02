@@ -146,7 +146,7 @@ export class Pipeline {
   }
 
   resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2) * (this.settings.renderScale || 1);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2) * (this.settings.renderScale || 1) * (this.dynScale || 1);
     const w = Math.max(1, Math.floor(window.innerWidth * dpr)), h = Math.max(1, Math.floor(window.innerHeight * dpr));
     if (w === this.width && h === this.height) return;
     this.width = w; this.height = h;

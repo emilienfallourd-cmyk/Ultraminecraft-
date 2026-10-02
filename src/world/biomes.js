@@ -56,6 +56,8 @@ def('soul_sand_valley', 'Vallée du sable des âmes', { temp: 2, rain: 0, fog: '
 def('basalt_deltas', 'Deltas de basalte', { temp: 2, rain: 0, fog: '#685f70', dry: true });
 // End
 def('the_end', 'L\'End', { temp: 0.5, rain: 0, fog: '#0a0812', dry: true });
+// ajouté ensuite (identifiant en fin de liste pour garder les sauvegardes)
+def('autumn_forest', 'Forêt d\'automne', { grass: '#9c9a52', foliage: '#d2752a', water: '#3a6fd0', temp: 0.45, rain: 0.6 });
 
 export const NUM_BIOMES = BIOMES.length;
 // tables rapides

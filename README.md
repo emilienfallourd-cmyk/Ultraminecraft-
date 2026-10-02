@@ -42,7 +42,11 @@ Aucune étape de compilation : Three.js est inclus dans `lib/`.
 - **Sauvegarde** automatique dans le navigateur (IndexedDB).
 - **Sons** : bruitages synthétisés (pas selon le matériau, casse, voix des créatures, explosions, tonnerre), son 3D, réverbération dans les grottes, ambiances (pluie, vent, eau, oiseaux, grillons).
 - **Musique** : musique d'ambiance composée à la volée (commande `/musique`), juke-box avec 8 disques aux morceaux originaux (Chat, Aube, Taverne, Caverne, Braises, Fête, Océan, Berceuse), blocs musicaux à 25 notes dont l'instrument dépend du bloc placé dessous.
-- **Mobile** : commandes tactiles.
+- **Redstone** : poudre de redstone (puissance de 0 à 15, monte et descend les marches), torches de redstone (inverseurs, grillent si elles clignotent trop vite), leviers, boutons en pierre et en bois, plaques de pression, répéteurs (retard de 1 à 4), observateurs, capteurs de lumière du jour (inversables), lampes, pistons et pistons collants (jusqu'à 12 blocs). Le courant active aussi les portes, la TNT, les blocs musicaux et les cloches.
+- **Forêt d'automne** : biome aux érables rouges et orangés, bouleaux dorés, sol couvert de feuilles mortes, citrouilles et champignons, feuilles qui tombent (`/locate automne`).
+- **Mobile** : joystick flottant (apparaît sous le pouce), bouton de course, taille des commandes réglable.
+- **Manette** : prise en charge des manettes Xbox, PlayStation et compatibles (API Gamepad), vibrations, curseur virtuel pour les menus et l'inventaire.
+- **Modes graphiques** : Mobile éco, Mobile, Mobile+, Rapide, Équilibré, Manette / TV, Réaliste et Ultra (RT), avec résolution dynamique, limite d'images et taille de l'interface. Le mode mobile adapté à l'appareil est choisi automatiquement au premier lancement.
 
 ## Commandes
 
@@ -62,7 +66,23 @@ Aucune étape de compilation : Three.js est inclus dans `lib/`.
 | F5 | Changer de vue |
 | Échap | Pause |
 
-Commandes utiles : `/gamemode 1`, `/give diamond_sword`, `/summon zombie`, `/boss dragon|wither|warden`, `/dimension nether|end|overworld`, `/time set nuit`, `/weather rain`, `/locate village|outpost|temple|mineshaft|monument`, `/musique [stop]`, `/help`.
+### Manette
+
+| Bouton | En jeu | Dans les menus |
+| --- | --- | --- |
+| Stick gauche | Se déplacer | Déplacer le curseur |
+| Stick droit | Regarder | Faire défiler |
+| A | Sauter (double appui : voler) | Cliquer |
+| B | S'accroupir | Retour |
+| X | Jeter l'objet | Clic droit |
+| Y | Inventaire | Fermer l'inventaire |
+| RT / LT | Casser / poser | — |
+| LB / RB, croix ← → | Barre d'objets | Onglets / régler un curseur |
+| Croix ↑ / ↓ | Changer de vue / main secondaire | Élément voisin |
+| L3 / R3 | Courir / choisir le bloc visé | — |
+| Menu | Pause | — |
+
+Commandes utiles : `/gamemode 1`, `/give diamond_sword`, `/summon zombie`, `/boss dragon|wither|warden`, `/dimension nether|end|overworld`, `/time set nuit`, `/weather rain`, `/locate village|outpost|temple|mineshaft|monument|automne`, `/locate biome cerisaie`, `/musique [stop]`, `/help`.
 
 ## Organisation du code
 

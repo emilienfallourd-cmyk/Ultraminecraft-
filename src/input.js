@@ -1,4 +1,6 @@
-// Entrées : clavier, souris (pointer lock), molette, manette tactile pour mobile
+// Entrées : clavier, souris (pointer lock), molette, commandes tactiles et manette
+import { GamepadInput } from './gamepad.js';
+
 export class Input {
   constructor(canvas) {
     this.canvas = canvas;
@@ -22,6 +24,9 @@ export class Input {
     this.lastW = 0;
     this.doubleW = false;
     this.onKey = null;          // callback (code, event) pour l'interface
+    this.padMove = { x: 0, y: 0 }; // stick gauche de la manette
+    this.padActive = false;
+    this.pad = new GamepadInput(this);
 
     addEventListener('keydown', (e) => {
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
@@ -80,7 +85,7 @@ export class Input {
   }
 
   requestLock() {
-    if (this.touch || !this.canvas.requestPointerLock) return;
+    if (this.touch || this.padActive || !this.canvas.requestPointerLock) return;
     const c = this.canvas;
     const plain = () => {
       try {
@@ -110,19 +115,38 @@ export class Input {
     const stick = root.querySelector('#tStick'), knob = root.querySelector('#tKnob');
     let stickId = null, sx = 0, sy = 0;
     const lookTouches = new Map();
-    const R = 55;
-    stick.addEventListener('touchstart', (e) => {
-      const t = e.changedTouches[0]; stickId = t.identifier;
-      const r = stick.getBoundingClientRect(); sx = r.left + r.width / 2; sy = r.top + r.height / 2;
-      e.preventDefault();
-    }, { passive: false });
+    const scale = () => parseFloat(getComputedStyle(root.querySelector('#touch')).getPropertyValue('--ts')) || 1;
+    const radius = () => 55 * scale();
+    // joystick flottant : il apparaît sous le pouce dans la moitié gauche de l'écran
+    this.floatStick = true;
+    const startStick = (t, float) => {
+      stickId = t.identifier;
+      if (float) {
+        const r = stick.getBoundingClientRect();
+        stick.style.left = (t.clientX - r.width / 2) + 'px'; stick.style.top = (t.clientY - r.height / 2) + 'px'; stick.style.bottom = 'auto';
+        stick.classList.add('float');
+        sx = t.clientX; sy = t.clientY;
+      } else {
+        const r = stick.getBoundingClientRect(); sx = r.left + r.width / 2; sy = r.top + r.height / 2;
+        moveStick(t);
+      }
+    };
+    const resetStick = () => {
+      stickId = null; this.move.x = 0; this.move.y = 0; knob.style.transform = '';
+      stick.style.left = stick.style.top = stick.style.bottom = ''; stick.classList.remove('float', 'sprint');
+      if (!this.sprintToggle) this.virtual.delete('Sprint');
+    };
+    stick.addEventListener('touchstart', (e) => { startStick(e.changedTouches[0], false); e.preventDefault(); }, { passive: false });
     const moveStick = (t) => {
+      const R = radius();
       let dx = t.clientX - sx, dy = t.clientY - sy;
       const l = Math.hypot(dx, dy);
       if (l > R) { dx *= R / l; dy *= R / l; }
       knob.style.transform = `translate(${dx}px, ${dy}px)`;
       this.move.x = dx / R; this.move.y = -dy / R;
-      if (this.move.y > 0.95 && !this.sprintLock) this.virtual.add('Sprint'); else if (this.move.y < 0.8) this.virtual.delete('Sprint');
+      // pousser le stick à fond vers l'avant fait courir
+      if (this.move.y > 0.95) this.virtual.add('Sprint'); else if (this.move.y < 0.8 && !this.sprintToggle) this.virtual.delete('Sprint');
+      stick.classList.toggle('sprint', this.virtual.has('Sprint'));
     };
     addEventListener('touchmove', (e) => {
       for (const t of e.changedTouches) {
@@ -130,7 +154,7 @@ export class Input {
         else if (lookTouches.has(t.identifier)) {
           const L = lookTouches.get(t.identifier);
           const dx = t.clientX - L.x, dy = t.clientY - L.y;
-          this.mouseDX += dx * 2.2; this.mouseDY += dy * 2.2;
+          this.mouseDX += dx * 2.2 * (this.touchLook || 1); this.mouseDY += dy * 2.2 * (this.touchLook || 1);
           L.moved += Math.abs(dx) + Math.abs(dy);
           L.x = t.clientX; L.y = t.clientY;
         }
@@ -139,7 +163,7 @@ export class Input {
     }, { passive: false });
     const endT = (e) => {
       for (const t of e.changedTouches) {
-        if (t.identifier === stickId) { stickId = null; this.move.x = 0; this.move.y = 0; knob.style.transform = ''; this.virtual.delete('Sprint'); }
+        if (t.identifier === stickId) resetStick();
         const L = lookTouches.get(t.identifier);
         if (L) {
           clearTimeout(L.timer);
@@ -153,6 +177,7 @@ export class Input {
     this.canvas.addEventListener('touchstart', (e) => {
       if (this.uiOpen) return;
       for (const t of e.changedTouches) {
+        if (stickId === null && this.floatStick && t.clientX < innerWidth * 0.4 && t.clientY > innerHeight * 0.3) { startStick(t, true); continue; }
         const L = { x: t.clientX, y: t.clientY, moved: 0, t0: performance.now(), breaking: false };
         // appui long = casser / attaquer
         L.timer = setTimeout(() => { if (L.moved < 20) { L.breaking = true; this.buttons |= 1; this.clicks.push(0); } }, 280);
@@ -175,5 +200,13 @@ export class Input {
     btn('#tJump', 'Space'); btn('#tSneak', 'ShiftLeft'); btn('#tInv', 'KeyE', false); btn('#tPause', 'Escape', false);
     btn('#tAttack', 'TouchAttack', true); btn('#tUse', 'TouchUse', true); btn('#tDrop', 'KeyQ', false); btn('#tChat', 'KeyT', false);
     btn('#tView', 'F5', false);
+    // bouton de course (bascule)
+    const sp = root.querySelector('#tSprint');
+    if (sp) sp.addEventListener('touchstart', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      this.sprintToggle = !this.sprintToggle;
+      sp.classList.toggle('on', this.sprintToggle);
+      if (this.sprintToggle) this.virtual.add('Sprint'); else this.virtual.delete('Sprint');
+    }, { passive: false });
   }
 }

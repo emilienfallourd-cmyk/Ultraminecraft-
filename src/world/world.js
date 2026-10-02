@@ -192,6 +192,7 @@ export class World {
     if (c.meta[i] === meta) return;
     c.meta[i] = meta; c.modified = true;
     this.markAround(x, y, z);
+    if (this.logic && this.logic.onMetaChanged) this.logic.onMetaChanged(this, x, y, z);
   }
 
   getBlockEntity(x, y, z) {

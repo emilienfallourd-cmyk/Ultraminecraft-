@@ -35,6 +35,48 @@ function connects(id, BLK, kind) {
   return false;
 }
 
+
+// ----------------------------------------------------------- REDSTONE
+// Orientation des blocs fixés (levier, bouton) : bits 0-1 direction, bits 2-3 support (0 sol, 1 mur, 2 plafond)
+function attachOrient(meta) {
+  const face = (meta >> 2) & 3;
+  const rot = face === 1 ? { axis: 'x', angle: 90, origin: [8, 8, 8] } : face === 2 ? { axis: 'x', angle: 180, origin: [8, 8, 8] } : null;
+  return { rot, rotY: FACING_ROT[meta & 3] };
+}
+// Orientation 6 directions (pistons, observateurs) : 0 haut, 1 bas, 2+f horizontal (f : 0 sud, 1 ouest, 2 nord, 3 est)
+function orient6(k) {
+  if (k === 0) return { rot: null, rotY: 0 };
+  if (k === 1) return { rot: { axis: 'x', angle: 180, origin: [8, 8, 8] }, rotY: 0 };
+  return { rot: { axis: 'x', angle: 90, origin: [8, 8, 8] }, rotY: FACING_ROT[(k - 2) & 3] };
+}
+function withRot(el, r) { if (r) el.rot = el.rot ? [].concat(el.rot, r) : r; return el; }
+
+// Connexions de la poudre de redstone (ordre E, O, S, N) — partagé par le rendu et la logique
+const H4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+const H4_K = [5, 3, 2, 4]; // index de direction 6 (0 haut, 1 bas, 2 sud, 3 ouest, 4 nord, 5 est)
+function rsConnects(b, meta, i) {
+  switch (b.rs) {
+    case 'wire': case 'torch': case 'torch_off': case 'lever': case 'button': case 'plate': case 'block': case 'daylight': return true;
+    case 'repeater': return (i < 2) === ((meta & 1) === 1);
+    case 'observer': return (meta & 7) === H4_K[i];
+    default: return false;
+  }
+}
+export function wireConn(get, getMeta, BLK) {
+  const side = [0, 0, 0, 0], up = [0, 0, 0, 0];
+  const above = BLK[get(0, 1, 0)];
+  const aboveOpaque = above && above.opaque;
+  for (let i = 0; i < 4; i++) {
+    const [dx, dz] = H4[i];
+    const b = BLK[get(dx, 0, dz)];
+    if (!b) continue;
+    if (b.rs && rsConnects(b, getMeta(dx, 0, dz), i)) { side[i] = 1; continue; }
+    if (!aboveOpaque) { const u = BLK[get(dx, 1, dz)]; if (u && u.rs === 'wire') { side[i] = 1; up[i] = 1; continue; } }
+    if (!b.opaque) { const d = BLK[get(dx, -1, dz)]; if (d && d.rs === 'wire') side[i] = 1; }
+  }
+  return { side, up };
+}
+
 export const MODELS = {
   farmland(meta, b) {
     const t = b.tex;
@@ -316,8 +358,96 @@ export const MODELS = {
       ],
     };
   },
+
+  redstone_wire(meta, b, ctx, BLK) {
+    const c = wireConn((dx, dy, dz) => ctx.id(dx, dy, dz), (dx, dy, dz) => ctx.meta(dx, dy, dz), BLK);
+    const [e, w, s, n] = c.side;
+    const o = { tint: true };
+    const R90 = { axis: 'y', angle: 90, origin: [8, 8, 8] };
+    const L = 'redstone_dust_line', D = 'redstone_dust_dot';
+    const els = [];
+    const cnt = e + w + s + n;
+    if (cnt === 0) els.push(plane([0, 1, 0], [16, 1, 16], D, o));
+    else if (!(s || n)) els.push(plane([0, 1, 0], [16, 1, 16], L, { ...o, rot: R90 }));
+    else if (!(e || w)) els.push(plane([0, 1, 0], [16, 1, 16], L, o));
+    else {
+      els.push(plane([4, 1, 4], [12, 1, 12], D, o));
+      if (s) els.push(plane([0, 1, 12], [16, 1, 16], L, o));
+      if (n) els.push(plane([0, 1, 0], [16, 1, 4], L, o));
+      if (e) els.push(plane([0, 1, 12], [16, 1, 16], L, { ...o, rot: R90 }));
+      if (w) els.push(plane([0, 1, 0], [16, 1, 4], L, { ...o, rot: R90 }));
+    }
+    if (c.up[0]) els.push(plane([15, 0, 0], [15, 16, 16], L, o));
+    if (c.up[1]) els.push(plane([1, 0, 0], [1, 16, 16], L, o));
+    if (c.up[2]) els.push(plane([0, 0, 15], [16, 16, 15], L, o));
+    if (c.up[3]) els.push(plane([0, 0, 1], [16, 16, 1], L, o));
+    return { els };
+  },
+  lever(meta) {
+    const { rot, rotY } = attachOrient(meta);
+    const on = meta & 16;
+    const uvs = [[7, 6, 9, 16], [7, 6, 9, 16], [7, 6, 9, 8], [7, 14, 9, 16], [7, 6, 9, 16], [7, 6, 9, 16]];
+    return {
+      els: [
+        withRot(box([5, 0, 4], [11, 3, 12], 'cobblestone'), rot),
+        withRot(box([7, 1, 7], [9, 11, 9], 'lever', { uv: uvs, noCull: true, rot: { axis: 'x', angle: on ? -40 : 40, origin: [8, 1, 8] } }), rot),
+      ],
+      rotY,
+    };
+  },
+  button(meta, b) {
+    const { rot, rotY } = attachOrient(meta);
+    const h = (meta & 16) ? 1 : 2;
+    return { els: [withRot(box([5, 0, 6], [11, h, 10], b.tex[0]), rot)], rotY };
+  },
+  plate(meta, b) {
+    return { els: [box([1, 0, 1], [15, (meta & 1) ? 1 : 2, 15], b.tex[0])] };
+  },
+  repeater(meta) {
+    const delay = (meta >> 2) & 3, on = meta & 16;
+    const ss = 'smooth_stone', side = [0, 14, 16, 16];
+    const t = on ? 'redstone_torch' : 'redstone_torch_off';
+    const tuv = [[7, 6, 9, 11], [7, 6, 9, 11], [7, 6, 9, 8], [7, 6, 9, 8], [7, 6, 9, 11], [7, 6, 9, 11]];
+    const torch = (z) => box([7, 2, z], [9, 7, z + 2], t, { uv: tuv, noCull: true });
+    return {
+      els: [
+        box([0, 0, 0], [16, 2, 16], [ss, ss, on ? 'repeater_on' : 'repeater', ss, ss, ss], { uv: [side, side, null, null, side, side] }),
+        torch(10), torch(6 - delay * 2),
+      ],
+      rotY: FACING_ROT[meta & 3],
+    };
+  },
+  observer(meta) {
+    const { rot, rotY } = orient6(meta & 7);
+    const s = 'observer_side';
+    return { els: [withRot(box([0, 0, 0], [16, 16, 16], [s, s, 'observer_front', (meta & 8) ? 'observer_back_on' : 'observer_back', s, s]), rot)], rotY };
+  },
+  daylight(meta) {
+    const s = 'daylight_detector_side', side = [0, 10, 16, 16];
+    return { els: [box([0, 0, 0], [16, 6, 16], [s, s, (meta & 16) ? 'daylight_detector_inverted_top' : 'daylight_detector_top', 'oak_planks', s, s], { uv: [side, side, null, null, side, side] })] };
+  },
+  piston(meta, b) {
+    const { rot, rotY } = orient6(meta & 7);
+    const ext = meta & 8;
+    const s = 'piston_side', lo = [0, 4, 16, 16], hi = [0, 0, 16, 4];
+    const els = [withRot(box([0, 0, 0], [16, 12, 16], [s, s, ext ? 'piston_inner' : null, 'piston_bottom', s, s], { uv: [lo, lo, null, null, lo, lo] }), rot)];
+    if (!ext) els.push(withRot(box([0, 12, 0], [16, 16, 16], [s, s, b.key === 'sticky_piston' ? 'piston_top_sticky' : 'piston_top', null, s, s], { uv: [hi, hi, null, null, hi, hi] }), rot));
+    return { els, rotY };
+  },
+  piston_head(meta) {
+    const { rot, rotY } = orient6(meta & 7);
+    const s = 'piston_side', hi = [0, 0, 16, 4];
+    const a = [6, 0, 10, 16];
+    return {
+      els: [
+        withRot(box([0, 12, 0], [16, 16, 16], [s, s, (meta & 8) ? 'piston_top_sticky' : 'piston_top', 'piston_top', s, s], { uv: [hi, hi, null, null, hi, hi], noCull: true }), rot),
+        withRot(box([6, -4, 6], [10, 12, 10], 'piston_arm', { uv: [a, a, [6, 6, 10, 10], [6, 6, 10, 10], a, a], noCull: true }), rot),
+      ],
+      rotY,
+    };
+  },
   petals(meta, b, ctx) {
-    return { els: [plane([0, 0.6, 0], [16, 0.6, 16], 'pink_petals')], rotY: [0, 90, 180, 270][Math.floor(ctx.hash * 4)] };
+    return { els: [plane([0, 0.6, 0], [16, 0.6, 16], b.tex[0])], rotY: [0, 90, 180, 270][Math.floor(ctx.hash * 4)] };
   },
 };
 // modèles dépendant des voisins
@@ -328,6 +458,7 @@ MODELS.chorus.dynamic = true;
 MODELS.bamboo.dynamic = true;
 MODELS.lily_pad.dynamic = true;
 MODELS.petals.dynamic = true;
+MODELS.redstone_wire.dynamic = true;
 
 // ------------------------------------------------------------ COLLISIONS
 export function rotBox(b, deg) {
@@ -345,6 +476,21 @@ const fenceConn = (world, x, y, z, kind) => {
   const B = world.blockDefs;
   return [[0, 1], [-1, 0], [0, -1], [1, 0]].map(([dx, dz]) => connects(world.getBlock(x + dx, y, z + dz), B, kind));
 };
+
+// boîte d'un bloc fixé (définie posée au sol, tournée vers le sud)
+function attachBox(b, m) {
+  const face = (m >> 2) & 3;
+  let r = b;
+  if (face === 1) r = [b[0], 1 - b[5], b[1], b[3], 1 - b[2], b[4]];
+  else if (face === 2) r = [b[0], 1 - b[4], 1 - b[5], b[3], 1 - b[1], 1 - b[2]];
+  return rotBox(r, FACING_ROT[m & 3]);
+}
+// boîte orientée 6 directions (définie vers le haut)
+export function orientBox6(b, k) {
+  if (k === 0) return b;
+  if (k === 1) return [b[0], 1 - b[4], 1 - b[5], b[3], 1 - b[1], 1 - b[2]];
+  return rotBox([b[0], 1 - b[5], b[1], b[3], 1 - b[2], b[4]], FACING_ROT[(k - 2) & 3]);
+}
 
 export const BOXES = {
   full: () => [[0, 0, 0, 1, 1, 1]],
@@ -393,4 +539,12 @@ export const BOXES = {
   enchanting_table: () => [[0, 0, 0, 1, 0.75, 1]],
   bell: () => [[0, 0, 0.35, 1, 1, 0.65]],
   campfire: () => [[0, 0, 0, 1, 7 / 16, 1]],
+  wire: () => [[0, 0, 0, 1, 1 / 16, 1]],
+  lever: (m) => [attachBox([5 / 16, 0, 4 / 16, 11 / 16, 6 / 16, 12 / 16], m)],
+  button: (m) => [attachBox([5 / 16, 0, 6 / 16, 11 / 16, ((m & 16) ? 1 : 2) / 16, 10 / 16], m)],
+  plate: () => [[1 / 16, 0, 1 / 16, 15 / 16, 1 / 16, 15 / 16]],
+  repeater: () => [[0, 0, 0, 1, 2 / 16, 1]],
+  daylight: () => [[0, 0, 0, 1, 6 / 16, 1]],
+  piston: (m) => (m & 8) ? [orientBox6([0, 0, 0, 1, 12 / 16, 1], m & 7)] : [[0, 0, 0, 1, 1, 1]],
+  piston_head: (m) => [orientBox6([0, 12 / 16, 0, 1, 1, 1], m & 7), orientBox6([6 / 16, 0, 6 / 16, 10 / 16, 12 / 16, 10 / 16], m & 7)],
 };

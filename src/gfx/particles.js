@@ -198,6 +198,7 @@ export class Particles {
   sparkle(x, y, z, r = 1, g = 1, b = 0.5) { this.add(x, y, z, (Math.random() - 0.5) * 0.04, 0.03, (Math.random() - 0.5) * 0.04, { type: 2, size: 0.07, life: 0.8, r, g, b }); }
   drip(x, y, z, lava) { this.add(x, y, z, 0, 0, 0, { type: lava ? 2 : 1, size: 0.06, life: 2, grav: 6, r: lava ? 1 : 0.4, g: lava ? 0.4 : 0.6, b: lava ? 0.1 : 1, a: 0.9, collide: true }); }
   petal(x, y, z) { this.add(x, y, z, 0.02 + Math.random() * 0.02, -0.01, (Math.random() - 0.5) * 0.02, { type: 1, size: 0.07, life: 6, grav: 0.3, r: 1, g: 0.7, b: 0.85, a: 1, drag: 0.99, collide: true }); }
+  leaf(x, y, z, r, g, b) { this.add(x, y, z, 0.015 + Math.random() * 0.025, -0.01, (Math.random() - 0.5) * 0.03, { type: 1, size: 0.09, life: 8, grav: 0.25, r, g, b, a: 1, drag: 0.985, collide: true }); }
   rain(x, y, z, snow) {
     if (snow) this.add(x, y, z, (Math.random() - 0.5) * 0.02, -0.06, (Math.random() - 0.5) * 0.02, { type: 1, size: 0.07, life: 6, r: 1, g: 1, b: 1, a: 0.9, drag: 1, collide: true });
     else this.add(x, y, z, 0, -0.9, 0, { type: 3, size: 0.55, life: 1.5, r: 0.65, g: 0.75, b: 0.9, a: 0.45, drag: 1, collide: true, fade: false, onDie: 'rainSplash' });

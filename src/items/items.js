@@ -129,7 +129,7 @@ mat('stick', 'Bâton'); mat('coal', 'Charbon', { fuel: 1600 }); mat('charcoal', 
 mat('raw_iron', 'Fer brut'); mat('raw_gold', 'Or brut'); mat('raw_copper', 'Cuivre brut');
 mat('iron_ingot', 'Lingot de fer'); mat('gold_ingot', 'Lingot d\'or'); mat('copper_ingot', 'Lingot de cuivre');
 mat('iron_nugget', 'Pépite de fer'); mat('gold_nugget', 'Pépite d\'or');
-mat('diamond', 'Diamant'); mat('emerald', 'Émeraude'); mat('lapis_lazuli', 'Lapis-lazuli'); mat('redstone', 'Poudre de redstone');
+mat('diamond', 'Diamant'); mat('emerald', 'Émeraude'); mat('lapis_lazuli', 'Lapis-lazuli'); mat('redstone', 'Poudre de redstone', { plant: 'redstone_wire', cat: 'redstone' });
 mat('quartz', 'Quartz du Nether'); mat('netherite_scrap', 'Fragment de netherite'); mat('netherite_ingot', 'Lingot de netherite');
 mat('flint', 'Silex'); mat('string', 'Ficelle'); mat('feather', 'Plume'); mat('gunpowder', 'Poudre à canon');
 mat('bone', 'Os'); mat('bone_meal', 'Poudre d\'os', { use: 'bonemeal' }); mat('leather', 'Cuir'); mat('paper', 'Papier'); mat('book', 'Livre');

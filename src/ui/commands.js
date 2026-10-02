@@ -4,6 +4,7 @@ import { MOB_DEFS } from '../entity/mobs.js';
 import { DAY_LENGTH, HEIGHT } from '../constants.js';
 import { strongholdPositions } from '../world/gen/structures.js';
 import { BLOCKS } from '../blocks/blocks.js';
+import { BIOMES } from '../world/biomes.js';
 
 const GM = { survival: 0, s: 0, 0: 0, survie: 0, creative: 1, c: 1, 1: 1, creatif: 1, 'créatif': 1, spectator: 3, sp: 3, 3: 3, spectateur: 3 };
 const ERR = (m) => `<span style="color:#ff5555">${m}</span>`;
@@ -151,6 +152,25 @@ export function runCommand(game, line) {
         }
         return best ? OK(`Structure : ${best[0]} ~ ${best[1]} (${Math.round(best[2])} blocs)`) : ERR('Aucune trouvée');
       }
+      // biomes : /locate biome <nom> (ou directement /locate automne, /locate cerisaie…)
+      if (game.dim === 0 && gen && gen.column) {
+        const norm = (v) => v.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z]/g, '');
+        const q = norm(t === 'biome' ? a.slice(1).join(' ') : a.join(' '));
+        const alias = { automne: 'autumn_forest', autumn: 'autumn_forest', foretdautomne: 'autumn_forest' };
+        const NOT_OVER = ['nether_wastes', 'crimson_forest', 'warped_forest', 'soul_sand_valley', 'basalt_deltas', 'the_end', 'deep_dark'];
+        const b = q && BIOMES.find((bb) => !NOT_OVER.includes(bb.key) && (norm(bb.key) === q || norm(bb.name) === q || alias[q] === bb.key));
+        if (b) {
+          const px = Math.floor(p.x), pz = Math.floor(p.z);
+          for (let r = 0; r <= 4000; r += 32) {
+            const n = Math.max(1, Math.round((2 * Math.PI * r) / 32));
+            for (let i = 0; i < n; i++) {
+              const ang = (i / n) * Math.PI * 2, x = px + Math.round(Math.cos(ang) * r), z = pz + Math.round(Math.sin(ang) * r);
+              if (gen.column(x, z).biome === b.id) return OK(`${b.name} la plus proche : ${x} ~ ${z} (${r} blocs)`);
+            }
+          }
+          return ERR(b.name + ' introuvable dans un rayon de 4000 blocs');
+        }
+      }
       if (t === 'end_city' && game.dim === 2) return OK('Les cités de l\'End se trouvent sur les îles extérieures (à plus de 850 blocs du centre).');
       const extra = { outpost: [_outpostPlan, 320, 'Avant-poste de pillards'], avant_poste: [_outpostPlan, 320, 'Avant-poste de pillards'], temple: [_jungleTemplePlan, 256, 'Temple de la jungle'], jungle_temple: [_jungleTemplePlan, 256, 'Temple de la jungle'], mineshaft: [_mineshaftPlan, 160, 'Mine abandonnée'], mine: [_mineshaftPlan, 160, 'Mine abandonnée'], monument: [_monumentPlan, 512, 'Monument océanique'] }[t];
       if (extra && game.dim === 0) {
@@ -164,7 +184,7 @@ export function runCommand(game, line) {
         if (!best) return ERR('Aucune structure trouvée à proximité');
         return OK(`${label} le plus proche : ${best[0]} ~ ${best[1]} (${Math.round(best[2])} blocs)`);
       }
-      return ERR('Usage : /locate village|stronghold|ancient_city|outpost|temple|mineshaft|monument (surface), fortress|bastion (Nether)');
+      return ERR('Usage : /locate village|stronghold|ancient_city|outpost|temple|mineshaft|monument|automne|biome <nom> (surface), fortress|bastion (Nether)');
     }
     default: return ERR('Commande inconnue. Tapez /help');
   }

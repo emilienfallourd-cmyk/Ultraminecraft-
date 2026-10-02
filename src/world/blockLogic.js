@@ -3,6 +3,7 @@ import { BLOCK as K, BLOCKS, B_SOLID, B_OPAQUE, B_FLUID } from '../blocks/blocks
 import { Fluids } from './fluids.js';
 import { growTree } from './gen/features.js';
 import { RNG } from '../util/noise.js';
+import { Redstone, attachDir, V6 } from './redstone.js';
 
 const SOIL = new Set([K.grass_block, K.dirt, K.podzol, K.coarse_dirt, K.farmland, K.mud, K.moss_block, K.mycelium, K.snowy_grass_block]);
 const DIRS6 = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
@@ -12,10 +13,12 @@ const FACING_VEC = [[0, 1], [-1, 0], [0, -1], [1, 0]]; // sud, ouest, nord, est
 for (const k of ['grass_block', 'mycelium', 'farmland', 'wheat', 'carrots', 'potatoes', 'nether_wart', 'sugar_cane', 'cactus', 'ice', 'snow',
   'sweet_berry_bush', 'kelp', 'bamboo', 'fire', 'soul_fire', 'oak_leaves', 'spruce_leaves', 'birch_leaves', 'jungle_leaves', 'acacia_leaves',
   'dark_oak_leaves', 'cherry_leaves', 'oak_sapling', 'spruce_sapling', 'birch_sapling', 'jungle_sapling', 'acacia_sapling', 'dark_oak_sapling',
-  'cherry_sapling', 'red_mushroom', 'brown_mushroom', 'chorus_flower']) if (BLOCKS[K[k]]) BLOCKS[K[k]].randomTick = true;
+  'cherry_sapling', 'red_mushroom', 'brown_mushroom', 'chorus_flower', 'red_maple_leaves', 'orange_maple_leaves', 'golden_birch_leaves', 'maple_sapling']) if (BLOCKS[K[k]]) BLOCKS[K[k]].randomTick = true;
+// composants de redstone : le tick aléatoire répare les états bloqués
+for (const b of BLOCKS) if (b.rs && b.rs !== 'wire' && b.rs !== 'block') b.randomTick = true;
 
 export class BlockLogic {
-  constructor(game) { this.game = game; this.fluids = new Fluids(game); this.rng = new RNG(1234); }
+  constructor(game) { this.game = game; this.fluids = new Fluids(game); this.rng = new RNG(1234); this.redstone = new Redstone(game); }
 
   onBlockChanged(world, x, y, z, oldId, newId, oldMeta, newMeta) {
     // fluides voisins
@@ -34,8 +37,11 @@ export class BlockLogic {
     if ((oldId === K.obsidian || oldId === K.nether_portal) && newId !== K.nether_portal) {
       for (const [dx, dy, dz] of DIRS6) if (world.getBlock(x + dx, y + dy, z + dz) === K.nether_portal) world.schedule(x + dx, y + dy, z + dz, 1);
     }
-    // TNT allumée par le feu ou la lave voisine : non (géré par l'interaction)
+    // redstone et mécanismes
+    this.redstone.blockChanged(world, x, y, z, oldId, newId);
   }
+
+  onMetaChanged(world, x, y, z) { this.redstone.metaChanged(world, x, y, z); }
 
   supported(world, x, y, z, id, meta) {
     const def = BLOCKS[id];
@@ -55,6 +61,11 @@ export class BlockLogic {
         const f = (m - 1) & 3; // la torche pointe vers f, le mur est derrière
         const [vx, vz] = FACING_VEC[f];
         return B_SOLID[world.getBlock(x - vx, y, z - vz)];
+      }
+      case 'attach': {
+        const k = attachDir(id, meta), d = V6[k];
+        const b = world.getBlock(x + d[0], y + d[1], z + d[2]);
+        return !!B_SOLID[b] && (!!B_OPAQUE[b] || (k === 1 && BLOCKS[b].shape === 'model'));
       }
       case 'wall': {
         const [vx, vz] = FACING_VEC[meta & 3];
@@ -100,6 +111,7 @@ export class BlockLogic {
       if (world.getBlock(x + vx * s, y, z + vz * s) !== K.red_bed) this.game.breakBlock(x, y, z, false, true);
       return;
     }
+    if (def.mech === 'piston' || id === K.piston_head) { this.redstone.checkPiston(world, x, y, z, id); return; }
     if (!def.support && !def.tall && !def.tallTop) return;
     if (!this.supported(world, x, y, z, id, world.getMeta(x, y, z))) this.game.breakBlock(x, y, z, true, true);
   }
@@ -116,6 +128,7 @@ export class BlockLogic {
     if (!id) return;
     if (B_FLUID[id]) { this.fluids.tick(world, x, y, z); return; }
     const def = BLOCKS[id];
+    if (def.rs || def.mech === 'lamp' || def.mech === 'piston') { this.redstone.scheduledTick(world, x, y, z, id); return; }
     if (def.gravity) {
       const b = world.getBlock(x, y - 1, z);
       if (y > 0 && (b === 0 || B_FLUID[b] || (BLOCKS[b].replaceable && !B_SOLID[b]))) {
@@ -158,6 +171,7 @@ export class BlockLogic {
   }
 
   randomTick(world, x, y, z, id, meta) {
+    if (BLOCKS[id].rs) { this.redstone.randomTick(world, x, y, z, id, meta); return; }
     const r = Math.random();
     const light = () => Math.max(world.getBlockLight(x, y + 1, z), Math.round(world.getSkyLight(x, y + 1, z) * this.game.skyFactor()));
     switch (id) {

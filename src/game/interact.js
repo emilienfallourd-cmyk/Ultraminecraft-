@@ -6,6 +6,7 @@ import { SMELT, fuelValue } from '../items/recipes.js';
 import { raycast, rayBox } from '../entity/physics.js';
 import { tileIndex } from '../gfx/textures.js';
 import { GAMEMODE, DAY_LENGTH } from '../constants.js';
+import { OPP6 } from '../world/redstone.js';
 
 const DIR = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
 const FACE_TO_FACING = { 0: 3, 1: 1, 4: 0, 5: 2 }; // face horizontale -> facing
@@ -53,12 +54,12 @@ export class Interaction {
     const blocked = ui.isScreenOpen() || this.game.paused || p.dead || p.sleeping;
     const I = p.input;
     if (blocked) { I.strafe = 0; I.forward = 0; I.jump = false; I.sneak = false; I.sprint = false; I.doubleJump = false; I.jumpPressed = false; return; }
-    I.strafe = (inp.down('KeyD') ? 1 : 0) - (inp.down('KeyA') ? 1 : 0) + inp.move.x;
-    I.forward = (inp.down('KeyW') ? 1 : 0) - (inp.down('KeyS') ? 1 : 0) + inp.move.y;
+    I.strafe = (inp.down('KeyD') ? 1 : 0) - (inp.down('KeyA') ? 1 : 0) + inp.move.x + inp.padMove.x;
+    I.forward = (inp.down('KeyW') ? 1 : 0) - (inp.down('KeyS') ? 1 : 0) + inp.move.y + inp.padMove.y;
     I.strafe = Math.max(-1, Math.min(1, I.strafe)); I.forward = Math.max(-1, Math.min(1, I.forward));
     I.jump = inp.down('Space');
     I.sneak = inp.down('ShiftLeft') || inp.down('ShiftRight');
-    if (inp.down('ControlLeft') || inp.virtual.has('Sprint') || this.sprintLatch) I.sprint = true;
+    if ((inp.down('ControlLeft') || inp.virtual.has('Sprint') || this.sprintLatch) && I.forward > 0) I.sprint = true;
     else if (I.forward <= 0) I.sprint = false;
     if (I.forward <= 0) this.sprintLatch = false;
     I.doubleJump = this.doubleJumpLatch || false; this.doubleJumpLatch = false;
@@ -479,6 +480,14 @@ export class Interaction {
     return ld[2] > 0 ? 0 : 2;
   }
 
+  // direction du regard sur 6 axes (0 haut, 1 bas, 2+facing)
+  lookDir6() {
+    const ld = this.player.lookDir();
+    if (ld[1] > 0.72) return 0;
+    if (ld[1] < -0.72) return 1;
+    return 2 + this.lookFacing();
+  }
+
   placeBlock(t, held) {
     const g = this.game, p = this.player, w = this.world;
     let [x, y, z] = this.placementPos(t);
@@ -504,6 +513,15 @@ export class Interaction {
       else if (t.face === 3) return;
       else meta = 1 + FACE_TO_FACING[t.face];
     }
+    // redstone : leviers et boutons (sol, mur, plafond), répéteurs, observateurs, pistons
+    if (def.rs === 'lever' || def.rs === 'button') {
+      if (t.face === 2) meta = lf;
+      else if (t.face === 3) meta = (2 << 2) | lf;
+      else meta = (1 << 2) | FACE_TO_FACING[t.face];
+    }
+    if (def.rs === 'repeater') meta = lf;
+    if (def.rs === 'observer') meta = this.lookDir6();
+    if (def.mech === 'piston') meta = OPP6[this.lookDir6()];
     if (def.key.endsWith('_leaves')) meta = 1; // persistantes
     if (def.key === 'snow' && w.getBlock(x, y, z) === K.snow) { const m = w.getMeta(x, y, z); if (m < 7) { w.setBlock(x, y, z, K.snow, m + 1); this.afterPlace(x, y, z, id); } return; }
     if (!this.canPlaceAt(x, y, z, id, meta)) return;
@@ -512,14 +530,14 @@ export class Interaction {
     // blocs de deux cases
     if (def.key === 'oak_door') {
       if (!this.canPlaceAt(x, y + 1, z, id, meta | 8) || !B_SOLID[w.getBlock(x, y - 1, z)]) return;
-      w.setBlock(x, y, z, id, meta); w.setBlock(x, y + 1, z, id, meta | 8);
+      w.setBlock(x, y + 1, z, id, meta | 8, { notify: false }); w.setBlock(x, y, z, id, meta);
       this.afterPlace(x, y, z, id); return;
     }
     if (def.key === 'red_bed') {
       const f = lf;
       const [vx, vz] = [[0, 1], [-1, 0], [0, -1], [1, 0]][f];
       if (!this.canPlaceAt(x + vx, y, z + vz, id, f | 8)) return;
-      w.setBlock(x, y, z, id, f); w.setBlock(x + vx, y, z + vz, id, f | 8);
+      w.setBlock(x + vx, y, z + vz, id, f | 8, { notify: false }); w.setBlock(x, y, z, id, f);
       this.afterPlace(x, y, z, id); return;
     }
     if (def.tall) {
@@ -535,11 +553,8 @@ export class Interaction {
     if (def.key === 'furnace') w.setBlockEntity(x, y, z, { type: 'furnace', input: null, fuel: null, output: null, burn: 0, burnMax: 0, cook: 0 });
     if (id === K.wither_skeleton_skull) g.portals.checkWitherSummon(x, y, z);
     if (id === K.carved_pumpkin) g.portals.checkGolemSummon(x, y, z);
-    if (id === K.tnt && this.redstoneNear(x, y, z)) { w.setBlock(x, y, z, 0); g.primeTnt(x, y, z); }
     this.afterPlace(x, y, z, id);
   }
-
-  redstoneNear(x, y, z) { for (const d of DIR) if (this.world.getBlock(x + d[0], y + d[1], z + d[2]) === K.redstone_block) return true; return false; }
 
   afterPlace(x, y, z, id) {
     const g = this.game, p = this.player;
@@ -573,6 +588,8 @@ export class Interaction {
     if (!t) return;
     const def = BLOCKS[t.id];
     let itemId = def.item ? t.id : def.tallTop ? K[def.tallTop] : def.crop ? ITEM[def.crop.seed] : t.id === K.lit_furnace ? K.furnace : t.id === K.snowy_grass_block ? K.grass_block : null;
+    if (itemId === null && typeof def.drops === 'string' && ITEM[def.drops] !== undefined) itemId = ITEM[def.drops];
+    if (t.id === K.piston_head) { const m = this.world.getMeta(t.x, t.y, t.z); itemId = m & 8 ? K.sticky_piston : K.piston; }
     if (itemId === null || itemId === undefined) return;
     for (let i = 0; i < 9; i++) if (p.inventory[i] && p.inventory[i].id === itemId) { p.selected = i; this.game.ui.onHotbarChange(); return; }
     if (p.creative) {
@@ -657,6 +674,8 @@ export class Interaction {
         return false;
       }
       case 'eye': return false;
+      case 'lever': case 'button': case 'repeater': case 'daylight':
+        return g.logic.redstone.use(x, y, z, t.id);
     }
     if (t.id === K.sweet_berry_bush && w.getMeta(x, y, z) >= 2) {
       g.dropItem(new ItemStack(ITEM.sweet_berries, 1 + Math.floor(Math.random() * 2)), x + 0.5, y + 0.5, z + 0.5);

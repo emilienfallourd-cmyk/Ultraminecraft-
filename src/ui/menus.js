@@ -9,12 +9,22 @@ const SPLASHES = [
   'L\'End n\'est que le début !', 'Plus réaliste que jamais !', 'Aussi sur mobile !', 'Eau à réflexions en temps réel !',
   'Rayons de soleil volumétriques !', 'Trois dimensions !', 'Des villages à explorer !', 'Ombres dynamiques !', 'Bonjour la France !',
 ];
+// Modes graphiques. Les modes « Mobile » et « Manette / TV » ajustent aussi la résolution dynamique,
+// la limite d'images, la taille de l'interface et le nombre de tronçons maillés par image.
+const PRESET_BASE = { dynRes: 0, fpsCap: 0, uiScale: 1, chunkBudget: 7 };
 const PRESETS = [
-  { name: 'Rapide', shadows: 0, ssr: false, volumetric: false, bloom: false, clouds: false, renderScale: 0.7, renderDistance: 5, particles: 1 },
-  { name: 'Équilibré', shadows: 1, ssr: false, volumetric: false, bloom: true, clouds: true, renderScale: 0.85, renderDistance: 6, particles: 1 },
-  { name: 'Réaliste', shadows: 1, ssr: true, volumetric: true, bloom: true, clouds: true, renderScale: 1, renderDistance: 8, particles: 2 },
-  { name: 'Ultra (RT)', shadows: 2, ssr: true, volumetric: true, bloom: true, clouds: true, renderScale: 1, renderDistance: 12, particles: 2 },
+  { name: 'Mobile éco', desc: 'téléphones modestes, batterie', shadows: 0, ssr: false, volumetric: false, bloom: false, clouds: false, renderScale: 0.55, renderDistance: 3, particles: 0, dynRes: 30, fpsCap: 30, uiScale: 1.1, chunkBudget: 3 },
+  { name: 'Mobile', desc: 'la plupart des téléphones', shadows: 0, ssr: false, volumetric: false, bloom: true, clouds: false, renderScale: 0.7, renderDistance: 4, particles: 1, dynRes: 45, fpsCap: 0, uiScale: 1.1, chunkBudget: 4 },
+  { name: 'Mobile+', desc: 'tablettes et téléphones récents', shadows: 1, ssr: false, volumetric: false, bloom: true, clouds: true, renderScale: 0.75, renderDistance: 5, particles: 1, dynRes: 50, fpsCap: 0, uiScale: 1.05, chunkBudget: 5 },
+  { name: 'Rapide', desc: 'petits PC', shadows: 0, ssr: false, volumetric: false, bloom: false, clouds: false, renderScale: 0.7, renderDistance: 5, particles: 1 },
+  { name: 'Équilibré', desc: 'PC portables', shadows: 1, ssr: false, volumetric: false, bloom: true, clouds: true, renderScale: 0.85, renderDistance: 6, particles: 1 },
+  { name: 'Manette / TV', desc: 'jeu au canapé, interface agrandie, 60 i/s stables', shadows: 1, ssr: true, volumetric: true, bloom: true, clouds: true, renderScale: 1, renderDistance: 8, particles: 2, dynRes: 60, fpsCap: 60, uiScale: 1.4, chunkBudget: 6 },
+  { name: 'Réaliste', desc: 'PC de jeu', shadows: 1, ssr: true, volumetric: true, bloom: true, clouds: true, renderScale: 1, renderDistance: 8, particles: 2 },
+  { name: 'Ultra (RT)', desc: 'cartes graphiques puissantes', shadows: 2, ssr: true, volumetric: true, bloom: true, clouds: true, renderScale: 1, renderDistance: 12, particles: 2 },
 ];
+for (const p of PRESETS) for (const [k, v] of Object.entries(PRESET_BASE)) if (p[k] === undefined) p[k] = v;
+export function presetIndex(s) { return PRESETS.findIndex((p) => Object.keys(p).every((k) => k === 'name' || k === 'desc' || s[k] === p[k])); }
+export function presetByName(n) { return PRESETS.find((p) => p.name === n); }
 export { PRESETS };
 
 export class Menus {
@@ -95,8 +105,8 @@ export class Menus {
     const descs = ['Récoltez des ressources, fabriquez, survivez.', 'Ressources illimitées, vol libre, invulnérable.', 'Comme la Survie, mais une seule vie !'];
     this.set('create', `
       <div class="menu-title">Créer un nouveau monde</div>
-      <label class="field">Nom du monde<input type="text" id="cName" value="Nouveau monde" maxlength="40"></label>
-      <label class="field">Graine (laisser vide pour aléatoire)<input type="text" id="cSeed" placeholder="ex : 12345 ou un mot" maxlength="40"></label>
+      <label class="field"><span class="flabel">Nom du monde</span><input type="text" id="cName" value="Nouveau monde" maxlength="40"></label>
+      <label class="field"><span class="flabel">Graine (laisser vide pour aléatoire)</span><input type="text" id="cSeed" placeholder="ex : 12345 ou un mot" maxlength="40"></label>
       <button class="btn" id="cMode">Mode de jeu : Survie</button>
       <div class="field" id="cDesc" style="text-align:center">${descs[0]}</div>
       <div class="btn-row"><button class="btn" id="cGo">Créer le monde</button><button class="btn" id="cBack">Annuler</button></div>`, 'menu-bg dark');
@@ -117,24 +127,31 @@ export class Menus {
     const shadowN = ['Désactivées', 'Normales', 'Ultra'];
     const partN = ['Minimales', 'Réduites', 'Toutes'];
     const diffN = ['Paisible', 'Facile', 'Normale', 'Difficile'];
-    const preset = PRESETS.findIndex((p) => p.shadows === s.shadows && p.ssr === s.ssr && p.volumetric === s.volumetric && p.renderDistance === s.renderDistance);
+    const preset = presetIndex(s);
+    const touch = this.game && this.game.input && this.game.input.touch;
+    const dynN = (v) => (v ? 'cible ' + v + ' i/s' : 'Non');
     this.set('options', `
       <div class="menu-title">Options</div>
       <div class="opt-grid">
-        <button class="btn" id="oPreset">Graphismes : ${preset >= 0 ? PRESETS[preset].name : 'Personnalisé'}</button>
-        <label class="field">Distance de rendu : <span id="vRd">${s.renderDistance}</span> chunks<input type="range" id="oRd" min="2" max="16" value="${s.renderDistance}"></label>
+        <button class="btn" id="oPreset" title="${preset >= 0 ? PRESETS[preset].desc : ''}">Mode graphique : ${preset >= 0 ? PRESETS[preset].name : 'Personnalisé'}</button>
+        <div class="field preset-desc">${preset >= 0 ? 'Idéal pour : ' + PRESETS[preset].desc : 'Réglages personnalisés'}</div>
+        <button class="btn" id="oDyn">Résolution dynamique : ${dynN(s.dynRes)}</button>
+        <button class="btn" id="oCap">Limite d'images : ${s.fpsCap ? s.fpsCap + ' i/s' : 'Aucune'}</button>
+        <label class="field"><span class="flabel">Taille de l'interface : <span id="vUi">${Math.round((s.uiScale || 1) * 100)}</span> %</span><input type="range" id="oUi" min="70" max="160" step="5" value="${Math.round((s.uiScale || 1) * 100)}"></label>
+        ${touch ? `<label class="field"><span class="flabel">Taille des commandes tactiles : <span id="vTs">${Math.round((s.touchScale || 1) * 100)}</span> %</span><input type="range" id="oTs" min="70" max="160" step="5" value="${Math.round((s.touchScale || 1) * 100)}"></label>` : ''}
+        <label class="field"><span class="flabel">Distance de rendu : <span id="vRd">${s.renderDistance}</span> chunks</span><input type="range" id="oRd" min="2" max="16" value="${s.renderDistance}"></label>
         <button class="btn" id="oShadows">Ombres : ${shadowN[s.shadows]}</button>
         <button class="btn" id="oSSR">Réflexions (lancer de rayons) : ${onoff(s.ssr)}</button>
         <button class="btn" id="oVol">Rayons volumétriques : ${onoff(s.volumetric)}</button>
         <button class="btn" id="oBloom">Halo lumineux : ${onoff(s.bloom)}</button>
         <button class="btn" id="oClouds">Nuages volumétriques : ${onoff(s.clouds)}</button>
         <button class="btn" id="oPart">Particules : ${partN[s.particles]}</button>
-        <label class="field">Échelle de rendu : <span id="vRs">${Math.round(s.renderScale * 100)}</span> %<input type="range" id="oRs" min="40" max="100" step="5" value="${Math.round(s.renderScale * 100)}"></label>
-        <label class="field">Champ de vision : <span id="vFov">${s.fov}</span><input type="range" id="oFov" min="50" max="110" value="${s.fov}"></label>
-        <label class="field">Sensibilité : <span id="vSens">${Math.round(s.sensitivity * 100)}</span> %<input type="range" id="oSens" min="20" max="250" value="${Math.round(s.sensitivity * 100)}"></label>
-        <label class="field">Luminosité : <span id="vBr">${Math.round(s.brightness * 100)}</span> %<input type="range" id="oBr" min="50" max="200" value="${Math.round(s.brightness * 100)}"></label>
-        <label class="field">Volume général : <span id="vVol">${Math.round(s.volume * 100)}</span> %<input type="range" id="oVolm" min="0" max="100" value="${Math.round(s.volume * 100)}"></label>
-        <label class="field">Musique : <span id="vMus">${Math.round(s.musicVolume * 100)}</span> %<input type="range" id="oMus" min="0" max="100" value="${Math.round(s.musicVolume * 100)}"></label>
+        <label class="field"><span class="flabel">Échelle de rendu : <span id="vRs">${Math.round(s.renderScale * 100)}</span> %</span><input type="range" id="oRs" min="40" max="100" step="5" value="${Math.round(s.renderScale * 100)}"></label>
+        <label class="field"><span class="flabel">Champ de vision : <span id="vFov">${s.fov}</span></span><input type="range" id="oFov" min="50" max="110" value="${s.fov}"></label>
+        <label class="field"><span class="flabel">Sensibilité : <span id="vSens">${Math.round(s.sensitivity * 100)}</span> %</span><input type="range" id="oSens" min="20" max="250" value="${Math.round(s.sensitivity * 100)}"></label>
+        <label class="field"><span class="flabel">Luminosité : <span id="vBr">${Math.round(s.brightness * 100)}</span> %</span><input type="range" id="oBr" min="50" max="200" value="${Math.round(s.brightness * 100)}"></label>
+        <label class="field"><span class="flabel">Volume général : <span id="vVol">${Math.round(s.volume * 100)}</span> %</span><input type="range" id="oVolm" min="0" max="100" value="${Math.round(s.volume * 100)}"></label>
+        <label class="field"><span class="flabel">Musique : <span id="vMus">${Math.round(s.musicVolume * 100)}</span> %</span><input type="range" id="oMus" min="0" max="100" value="${Math.round(s.musicVolume * 100)}"></label>
         <button class="btn" id="oBob">Balancement de la vue : ${onoff(s.viewBob)}</button>
         <button class="btn" id="oDiff">Difficulté : ${diffN[s.difficulty]}</button>
         <button class="btn" id="oMobs">Créatures : ${onoff(s.mobs)}</button>
@@ -145,7 +162,9 @@ export class Menus {
       <button class="btn" id="oDone">Terminé</button>`, this.game && this.game.running && !this.game.demo ? 'menu-bg dark' : 'menu-bg');
     const save = () => { this.ui.app.saveSettings(); this.ui.app.applySettings(); };
     const re = () => { save(); this.options(); };
-    this.on('oPreset', () => { const i = (preset + 1) % PRESETS.length; Object.assign(s, PRESETS[i]); re(); });
+    this.on('oPreset', () => { const i = (preset + 1) % PRESETS.length; const { name, desc, ...vals } = PRESETS[i]; Object.assign(s, vals); re(); });
+    this.on('oDyn', () => { const L = [0, 30, 45, 60]; s.dynRes = L[(L.indexOf(s.dynRes || 0) + 1) % L.length]; re(); });
+    this.on('oCap', () => { const L = [0, 30, 60]; s.fpsCap = L[(L.indexOf(s.fpsCap || 0) + 1) % L.length]; re(); });
     this.on('oShadows', () => { s.shadows = (s.shadows + 1) % 3; re(); });
     this.on('oSSR', () => { s.ssr = !s.ssr; re(); });
     this.on('oVol', () => { s.volumetric = !s.volumetric; re(); });
@@ -166,6 +185,8 @@ export class Menus {
     slider('oBr', 'vBr', (v) => { s.brightness = v / 100; });
     slider('oVolm', 'vVol', (v) => { s.volume = v / 100; });
     slider('oMus', 'vMus', (v) => { s.musicVolume = v / 100; });
+    slider('oUi', 'vUi', (v) => { s.uiScale = v / 100; });
+    if (touch) slider('oTs', 'vTs', (v) => { s.touchScale = v / 100; });
     this.on('oDone', () => { if (this.returnTo) this.returnTo(); else this.title(); });
   }
 
@@ -178,7 +199,16 @@ export class Menus {
         <kbd>Clic gauche</kbd> miner / attaquer · <kbd>Clic droit</kbd> poser / utiliser · <kbd>Clic molette</kbd> choisir le bloc visé<br>
         <kbd>1-9</kbd> / molette barre d'action · <kbd>E</kbd> inventaire · <kbd>Q</kbd> jeter · <kbd>F</kbd> main secondaire<br>
         <kbd>T</kbd> discussion · <kbd>/</kbd> commande · <kbd>F1</kbd> masquer l'ATH · <kbd>F2</kbd> capture · <kbd>F3</kbd> débogage · <kbd>F5</kbd> vue · <kbd>C</kbd> zoom · <kbd>Échap</kbd> pause<br><br>
-        <b>Tactile</b> : joystick à gauche, glisser pour regarder, toucher pour poser/utiliser, appui long pour miner/attaquer.<br><br>
+        <b>Tactile</b> : posez le pouce n'importe où dans la moitié gauche pour faire apparaître le joystick (à fond vers l'avant : courir, bouton » : course continue),
+        glisser à droite pour regarder, toucher pour poser/utiliser, appui long pour miner/attaquer.<br>
+        <b>Manette</b> : stick gauche se déplacer · stick droit regarder · <kbd>A</kbd> sauter (double : voler) · <kbd>B</kbd> s'accroupir · <kbd>RT</kbd> miner / attaquer ·
+        <kbd>LT</kbd> poser / utiliser · <kbd>LB</kbd>/<kbd>RB</kbd> barre d'action · <kbd>Y</kbd> inventaire · <kbd>X</kbd> jeter · <kbd>L3</kbd> courir · <kbd>R3</kbd> choisir le bloc visé ·
+        croix ↑ vue · croix ↓ main secondaire · <kbd>Menu</kbd> pause. Dans les menus : stick gauche = curseur, croix = élément suivant, <kbd>A</kbd> clic, <kbd>X</kbd> clic droit, <kbd>B</kbd> retour, <kbd>LB</kbd>/<kbd>RB</kbd> onglets.<br>
+        Modes graphiques conseillés : <b>Mobile éco / Mobile / Mobile+</b> sur téléphone et tablette, <b>Manette / TV</b> pour jouer au canapé.<br><br>
+        <b>Redstone</b> : la poudre (posée avec de la redstone) transporte le courant sur 15 blocs. Sources : levier, boutons, plaques de pression, torche de redstone,
+        bloc de redstone, capteur de lumière du jour, observateur. Mécanismes : lampe, piston (pousse 12 blocs), piston collant (tire), porte, TNT, bloc musical, cloche.
+        Le répéteur (clic droit : retard de 1 à 4) relance le signal à 15 et l'oriente ; la torche inverse le signal du bloc qui la porte.
+        Un bloc plein touché par un levier, un bouton ou un répéteur alimente ses voisins.<br><br>
         <b>Commandes</b> : /gamemode survival|creative|spectator · /tp x y z · /time set day|night · /weather clear|rain|thunder ·
         /give &lt;objet&gt; [n] · /summon &lt;créature&gt; · /dimension overworld|nether|end · /locate village|outpost|temple|mineshaft|monument|stronghold|ancient_city (Nether : fortress|bastion) ·
         /effect &lt;effet&gt; · /xp n · /kill · /heal · /seed · /spawnpoint · /difficulty n · /clear · /boss dragon|wither|warden · /musique [stop]<br><br>

@@ -52,8 +52,13 @@ export class UI {
     this.game = game;
     const inp = game.input;
     inp.onKey = (code, e) => this.onKey(code, e);
+    inp.pad.onConnect = (on, id) => {
+      const name = (id || '').replace(/\(.*?\)/g, '').trim().slice(0, 40) || 'Manette';
+      if (on) this.toast('🎮 <b>' + name + '</b> connectée. Stick gauche : bouger, stick droit : regarder, RT : casser, LT : poser, Y : inventaire. Mode graphique conseillé : <b>Manette / TV</b> (Options).', 7000);
+      else this.toast('🎮 Manette déconnectée.');
+    };
     inp.onLockChange = (locked, failed) => {
-      if (failed) { this.toast('Verrouillage de la souris indisponible : maintenez le clic molette ou utilisez le glisser pour regarder.'); return; }
+      if (failed) { if (!game.input.padActive) this.toast('Verrouillage de la souris indisponible : maintenez le clic molette ou utilisez le glisser pour regarder.'); return; }
       if (!locked && game.running && !this.screen && !this.chatOpen && !this.menus.open && !this.ignoreUnlock && !game.input.touch && !game.player.dead) this.menus.pause();
       this.ignoreUnlock = false;
     };
@@ -68,8 +73,10 @@ export class UI {
     this.hud.build();
     this.refresh();
     if (this.game.input.touch) $('#touch').classList.add('active');
-    else this.game.input.requestLock();
-    this.toast('Bienvenue ! Appuyez sur <b>E</b> pour l\'inventaire, <b>T</b> pour la discussion, <b>/help</b> pour les commandes.');
+    else if (!this.game.input.padActive) this.game.input.requestLock();
+    if (this.game.input.touch) this.toast('Bienvenue ! Posez le pouce à gauche pour marcher, glissez à droite pour regarder, touchez pour poser, appui long pour miner. 🎒 : inventaire.', 6000);
+    else if (this.game.input.padActive) this.toast('Bienvenue ! <b>Y</b> : inventaire, <b>RT</b> : miner, <b>LT</b> : poser, <b>Menu</b> : pause.');
+    else this.toast('Bienvenue ! Appuyez sur <b>E</b> pour l\'inventaire, <b>T</b> pour la discussion, <b>/help</b> pour les commandes.');
   }
   leaveWorld() {
     $('#hud').classList.add('hidden');

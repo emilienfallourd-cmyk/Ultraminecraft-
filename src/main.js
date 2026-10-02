@@ -3,18 +3,28 @@ import { Game } from './game.js';
 import { UI } from './ui/ui.js';
 import { SaveStore } from './save.js';
 import { hashString } from './util/noise.js';
-import { PRESETS } from './ui/menus.js';
+import { presetByName } from './ui/menus.js';
 
 const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 const DEFAULTS = {
   renderDistance: 8, shadows: 1, ssr: true, volumetric: true, bloom: true, clouds: true, renderScale: 1, particles: 2,
   fov: 75, sensitivity: 1, brightness: 1, volume: 0.8, musicVolume: 0.5, sfxVolume: 1, viewBob: true, difficulty: 2,
   mobs: true, keepInventory: false, invertY: false, advancedTooltips: false, chunkBudget: 7, showHud: true,
+  dynRes: 0, fpsCap: 0, uiScale: 1, touchScale: 1,
 };
+
+// premier lancement sur mobile : mode graphique choisi selon la puissance de l'appareil
+function mobilePreset() {
+  const cores = navigator.hardwareConcurrency || 4, mem = navigator.deviceMemory || 4;
+  const big = Math.min(screen.width, screen.height) >= 700;
+  if (cores <= 4 || mem <= 3) return 'Mobile éco';
+  if (big && cores >= 8 && mem >= 6) return 'Mobile+';
+  return 'Mobile';
+}
 
 function loadSettings() {
   let s = { ...DEFAULTS };
-  if (isTouch) Object.assign(s, PRESETS[1], { renderDistance: 5, renderScale: 0.75 });
+  if (isTouch) { const { name, desc, ...vals } = presetByName(mobilePreset()); Object.assign(s, vals); }
   try { const raw = localStorage.getItem('umc-settings'); if (raw) s = { ...s, ...JSON.parse(raw) }; } catch (e) { /* stockage indisponible */ }
   return s;
 }
@@ -32,6 +42,9 @@ const App = {
     g.particles.density = s.particles === 0 ? 0.4 : s.particles === 1 ? 0.7 : 1;
     g.particles.enabled = s.particles > 0 || true;
     g.input.invertY = s.invertY;
+    document.documentElement.style.setProperty('--ui', String(s.uiScale || 1));
+    const t = document.getElementById('touch');
+    if (t) t.style.setProperty('--ts', String(s.touchScale || 1));
   },
 
   async boot() {

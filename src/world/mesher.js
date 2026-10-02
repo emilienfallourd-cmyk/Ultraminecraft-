@@ -103,17 +103,18 @@ export function bakeModel(def, meta, ctx) {
   const rotY = m.rotY ? { axis: 'y', angle: m.rotY, origin: [8, 8, 8] } : null;
   for (const el of m.els) {
     const { from, to } = el;
+    const rots = el.rot ? (Array.isArray(el.rot) ? el.rot : [el.rot]) : null;
     for (let f = 0; f < 6; f++) {
       const fc = el.faces[f];
       if (!fc) continue;
       const verts = FACE_V[f].map((c) => {
         let p = [c[0] ? to[0] : from[0], c[1] ? to[1] : from[1], c[2] ? to[2] : from[2]];
-        if (el.rot) p = rotPoint(p, el.rot);
+        if (rots) for (const r of rots) p = rotPoint(p, r);
         if (rotY) p = rotPoint(p, rotY);
         return [p[0] / 16, p[1] / 16, p[2] / 16];
       });
       let n = DIRS[f];
-      if (el.rot) n = rotDir(n, el.rot);
+      if (rots) for (const r of rots) n = rotDir(n, r);
       if (rotY) n = rotDir(n, rotY);
       const uvr = fc.uv || autoUV(f, from, to);
       const uv = [[uvr[0] / 16, uvr[3] / 16], [uvr[2] / 16, uvr[3] / 16], [uvr[2] / 16, uvr[1] / 16], [uvr[0] / 16, uvr[1] / 16]];
@@ -147,6 +148,12 @@ function faceTiles(def) {
 
 // teintes constantes
 const TINT_CONST = { 4: [97, 153, 97], 5: [128, 167, 85], 6: [32, 128, 48] };
+// couleur de la poudre de redstone selon la puissance (0-15)
+const RS_COL = [];
+for (let p = 0; p < 16; p++) {
+  const f = p / 15;
+  RS_COL.push([Math.round((p ? f * 0.6 + 0.4 : 0.3) * 255), Math.round(Math.max(0, f * f * 0.7 - 0.5) * 255), Math.round(Math.max(0, f * f * 0.6 - 0.7) * 255)]);
+}
 
 const solid = new Buf();
 const trans = new Buf();
@@ -181,6 +188,7 @@ export function meshSection(inp) {
         if (def.tint === 1) { tr = grass[col * 3]; tg = grass[col * 3 + 1]; tb = grass[col * 3 + 2]; }
         else if (def.tint === 2) { tr = foliage[col * 3]; tg = foliage[col * 3 + 1]; tb = foliage[col * 3 + 2]; }
         else if (def.tint === 3) { tr = water[col * 3]; tg = water[col * 3 + 1]; tb = water[col * 3 + 2]; }
+        else if (def.tint === 7) { const c = RS_COL[m & 15]; tr = c[0]; tg = c[1]; tb = c[2]; }
         else if (def.tint >= 4) { const c = TINT_CONST[def.tint]; tr = c[0]; tg = c[1]; tb = c[2]; }
 
         if (shape === 1) cube(pi, x, y, z, id, def, m, tr, tg, tb);

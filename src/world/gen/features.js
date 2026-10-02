@@ -7,7 +7,7 @@ import { BIOME as BI } from '../biomes.js';
 import { lootChest } from './loot.js';
 import { inSurfaceStructure } from './structures.js';
 
-const REPLACEABLE = new Set([0, K.short_grass, K.fern, K.tall_grass, K.tall_grass_top, K.large_fern, K.large_fern_top, K.snow, K.dead_bush, K.vine, K.pink_petals]);
+const REPLACEABLE = new Set([0, K.short_grass, K.fern, K.tall_grass, K.tall_grass_top, K.large_fern, K.large_fern_top, K.snow, K.dead_bush, K.vine, K.pink_petals, K.leaf_litter]);
 const isLeaf = (id) => BLOCKS[id] && BLOCKS[id].key.endsWith('_leaves');
 const SOIL = new Set([K.grass_block, K.dirt, K.podzol, K.coarse_dirt, K.snowy_grass_block, K.mud, K.moss_block, K.mycelium]);
 
@@ -46,6 +46,25 @@ function oak(w, x, y, z, rng, logId = K.oak_log, leafId = K.oak_leaves, hmin = 4
   for (let i = 0; i < h; i++) w.log(x, y + i, z, logId);
   w.set(x, y - 1, z, K.dirt);
   if (vines) addVines(w, x, top, z, 3, rng);
+}
+
+// érable : tronc droit, couronne ronde et dense (rouge ou orangée)
+function maple(w, x, y, z, rng, leafId) {
+  const h = 6 + rng.int(3);
+  if (y + h + 4 >= HEIGHT) return;
+  const cy = y + h - 1, R = 2.7 + rng.next() * 0.7;
+  for (let dy = -2; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) for (let dz = -3; dz <= 3; dz++) {
+    const d = Math.hypot(dx, dy * 1.3, dz);
+    if (d > R + (rng.next() - 0.5) * 0.7) continue;
+    w.leaf(x + dx, cy + dy, z + dz, leafId);
+  }
+  for (let i = 0; i < h; i++) w.log(x, y + i, z, K.oak_log);
+  // branches
+  for (let k = 0; k < 2; k++) {
+    const [bx, bz] = [[1, 0], [-1, 0], [0, 1], [0, -1]][rng.int(4)];
+    w.log(x + bx, cy - 1, z + bz, K.oak_log, bx ? 1 : 2);
+  }
+  w.set(x, y - 1, z, K.dirt);
 }
 
 function fancyOak(w, x, y, z, rng) {
@@ -404,6 +423,7 @@ export function decorateOverworld(world, chunk, gen) {
     [BI.forest]: 9, [BI.flower_forest]: 5, [BI.birch_forest]: 8, [BI.dark_forest]: 14, [BI.taiga]: 8, [BI.snowy_taiga]: 6,
     [BI.jungle]: 22, [BI.plains]: 0.25, [BI.sunflower_plains]: 0.15, [BI.savanna]: 1.2, [BI.swamp]: 2, [BI.cherry_grove]: 4,
     [BI.meadow]: 0.15, [BI.windswept_hills]: 1.5, [BI.snowy_plains]: 0.15, [BI.mushroom_fields]: 0.6, [BI.ice_spikes]: 1.5,
+    [BI.autumn_forest]: 8,
   };
   let n = density[bio] || 0;
   let count = Math.floor(n) + (rng.next() < n - Math.floor(n) ? 1 : 0);
@@ -444,6 +464,12 @@ export function decorateOverworld(world, chunk, gen) {
       case BI.savanna: acacia(w, x, ty, z, rng); break;
       case BI.swamp: oak(w, x, ty, z, rng, K.oak_log, K.oak_leaves, 5, 6, true); break;
       case BI.cherry_grove: cherry(w, x, ty, z, rng); break;
+      case BI.autumn_forest:
+        if (r < 0.32) maple(w, x, ty, z, rng, K.red_maple_leaves);
+        else if (r < 0.62) maple(w, x, ty, z, rng, K.orange_maple_leaves);
+        else if (r < 0.84) oak(w, x, ty, z, rng, K.birch_log, K.golden_birch_leaves, 5, 8);
+        else if (r < 0.92) fancyOak(w, x, ty, z, rng);
+        else oak(w, x, ty, z, rng); break;
       case BI.mushroom_fields: hugeMushroom(w, x, ty, z, rng); break;
       default: oak(w, x, ty, z, rng);
     }
@@ -500,6 +526,7 @@ export function growTree(world, x, y, z, kind, rng) {
     case 'acacia': acacia(w, x, y, z, rng); break;
     case 'dark_oak': darkOak(w, x, y, z, rng); break;
     case 'cherry': cherry(w, x, y, z, rng); break;
+    case 'maple': maple(w, x, y, z, rng, rng.next() < 0.5 ? K.red_maple_leaves : K.orange_maple_leaves); break;
     default: oak(w, x, y, z, rng);
   }
   return true;

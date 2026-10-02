@@ -363,6 +363,9 @@ export class Game {
     let last = performance.now();
     const loop = (now) => {
       requestAnimationFrame(loop);
+      // limite d'images (économie de batterie, rythme régulier sur TV)
+      const cap = this.settings.fpsCap;
+      if (cap && now - last < 1000 / cap - 2.5) return;
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       try { this.frame(dt, now); } catch (e) { console.error(e); if (!this.errShown) { this.errShown = true; this.ui.toast('Erreur : ' + e.message); } }
@@ -374,6 +377,7 @@ export class Game {
     this.fpsAcc += dt; this.fpsN++;
     if (this.fpsAcc > 0.5) { this.fps = Math.round(this.fpsN / this.fpsAcc); this.fpsAcc = 0; this.fpsN = 0; }
     const inp = this.input;
+    inp.pad.update(dt, this);
     if (!this.running || !this.world) { this.ui.menuFrame && this.ui.menuFrame(dt); inp.endFrame(); return; }
     if (this.demo) { this.demoFrame(dt); inp.endFrame(); return; }
     const p = this.player;
@@ -412,9 +416,26 @@ export class Game {
     });
     this.ui.update(dt);
     this.audio.update(this, dt);
+    this.updateDynamicResolution(dt);
     inp.endFrame();
     // sauvegarde automatique
     if (now - this.lastSave > 45000) { this.lastSave = now; this.saveGame(); }
+  }
+
+  // résolution dynamique : baisse l'échelle de rendu quand les images par seconde chutent sous la cible
+  updateDynamicResolution(dt) {
+    const P = this.pipeline, target = this.settings.dynRes;
+    if (!target) { if (P.dynScale && P.dynScale !== 1) { P.dynScale = 1; P.resize(); } return; }
+    if (this.loading || this.paused) { this.dynT = 0; this.dynF = 0; return; }
+    this.dynT = (this.dynT || 0) + dt; this.dynF = (this.dynF || 0) + 1;
+    if (this.dynT < 1.5) return;
+    const fps = this.dynF / this.dynT;
+    this.dynT = 0; this.dynF = 0;
+    let d = P.dynScale || 1;
+    if (fps < target * 0.9) { d -= fps < target * 0.6 ? 0.15 : 0.07; this.dynGood = 0; }
+    else if (fps >= target * 0.97 && d < 1) { if (++this.dynGood >= 2) { d += 0.05; this.dynGood = 0; } }
+    d = Math.max(0.45, Math.min(1, Math.round(d * 100) / 100));
+    if (d !== (P.dynScale || 1)) { P.dynScale = d; P.resize(); }
   }
 
   demoFrame(dt) {
@@ -454,6 +475,7 @@ export class Game {
     w.runTicks();
     w.randomTicks(Math.floor(p.x), Math.floor(p.z), 4, 3);
     this.entities.tick();
+    this.logic.redstone.tick();
     this.tickFurnaces();
     this.tickSpawners();
     if (this.tickCount % 20 === 0) naturalSpawn(this);
@@ -552,6 +574,10 @@ export class Game {
       else if (id === K.nether_portal && Math.random() < 0.3) this.particles.portal(x + 0.5, y + 0.5, z + 0.5, 1);
       else if (id === K.campfire && Math.random() < 0.2) this.particles.bigSmoke(x + 0.5, y + 0.8, z + 0.5);
       else if (id === K.cherry_leaves && w.getBlock(x, y - 1, z) === 0 && Math.random() < 0.05) this.particles.petal(x + Math.random(), y - 0.1, z + Math.random());
+      else if ((id === K.red_maple_leaves || id === K.orange_maple_leaves || id === K.golden_birch_leaves) && w.getBlock(x, y - 1, z) === 0 && Math.random() < 0.06) {
+        const c = id === K.red_maple_leaves ? [0.75, 0.2, 0.1] : id === K.orange_maple_leaves ? [0.9, 0.48, 0.12] : [0.92, 0.72, 0.2];
+        this.particles.leaf(x + Math.random(), y - 0.1, z + Math.random(), c[0] * (0.85 + Math.random() * 0.3), c[1] * (0.85 + Math.random() * 0.3), c[2]);
+      }
       else if ((id === K.fire || id === K.soul_fire) && Math.random() < 0.4) this.particles.smoke(x + Math.random(), y + 0.8, z + Math.random(), 0.6);
       else if (id === K.sculk_catalyst && Math.random() < 0.05) this.particles.soul(x + 0.5, y + 1.1, z + 0.5);
       else if (id === K.end_rod && Math.random() < 0.2) this.particles.sparkle(x + 0.5, y + 0.8, z + 0.5, 1, 1, 1);

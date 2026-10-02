@@ -28,7 +28,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0b0d; col
 #crosshair::after { top: 8px; left: 0; width: 18px; height: 2px; }
 #bottom { position: absolute; left: 50%; bottom: max(6px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
 /* barre d'action en pixel art : --hs = taille d'un pixel Minecraft */
-#bottom { --hs: 2px; }
+#bottom { --hs: calc(2px * var(--ui, 1)); }
 #hotbar { position: relative; width: calc(182 * var(--hs)); height: calc(22 * var(--hs)); background-size: 100% 100%; image-rendering: pixelated; }
 #hotbar .slot { position: absolute; left: calc((3 + 20 * var(--i)) * var(--hs)); top: calc(3 * var(--hs)); width: calc(16 * var(--hs)); height: calc(16 * var(--hs)); background: none; border: none; box-shadow: none; }
 #hotbar .slot img { inset: 0; width: 100%; height: 100%; filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.35)); }
@@ -154,23 +154,28 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0b0d; col
 /* -------------------------------------------------------------------- TACTILE */
 #touch { display: none; position: absolute; inset: 0; pointer-events: none; z-index: 5; }
 .touch #touch.active { display: block; }
-#tStick { position: absolute; left: max(24px, env(safe-area-inset-left)); bottom: 110px; width: 130px; height: 130px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); border: 2px solid rgba(255, 255, 255, 0.3); pointer-events: auto; }
-#tKnob { position: absolute; left: 40px; top: 40px; width: 50px; height: 50px; border-radius: 50%; background: rgba(255, 255, 255, 0.4); }
-.tbtn { position: absolute; width: 62px; height: 62px; border-radius: 14px; background: rgba(0, 0, 0, 0.35); border: 2px solid rgba(255, 255, 255, 0.35); color: #fff; font-size: 30px; display: flex; align-items: center; justify-content: center; pointer-events: auto; }
-.tbtn.small { width: 46px; height: 46px; font-size: 22px; border-radius: 10px; }
-#tJump { right: 24px; bottom: 120px; }
-#tSneak { right: 94px; bottom: 60px; }
-#tAttack { right: 94px; bottom: 190px; }
-#tUse { right: 24px; bottom: 260px; }
-#tInv { right: 12px; top: 12px; }
-#tPause { right: 64px; top: 12px; }
-#tDrop { right: 116px; top: 12px; }
-#tChat { right: 168px; top: 12px; }
-#tView { right: 220px; top: 12px; }
-.touch #bottom { --hs: 2px; }
+#touch { --ts: 1; }
+#tStick { position: absolute; left: max(24px, env(safe-area-inset-left)); bottom: calc(110px * var(--ts)); width: calc(130px * var(--ts)); height: calc(130px * var(--ts)); border-radius: 50%; background: rgba(255, 255, 255, 0.12); border: 2px solid rgba(255, 255, 255, 0.3); pointer-events: auto; }
+#tStick.float { background: rgba(255, 255, 255, 0.18); }
+#tKnob { position: absolute; left: 50%; top: 50%; width: calc(50px * var(--ts)); height: calc(50px * var(--ts)); margin: calc(-25px * var(--ts)) 0 0 calc(-25px * var(--ts)); border-radius: 50%; background: rgba(255, 255, 255, 0.4); }
+#tStick.sprint #tKnob { background: rgba(140, 220, 255, 0.75); box-shadow: 0 0 12px rgba(140, 220, 255, 0.8); }
+.tbtn { position: absolute; width: calc(62px * var(--ts)); height: calc(62px * var(--ts)); border-radius: calc(14px * var(--ts)); background: rgba(0, 0, 0, 0.35); border: 2px solid rgba(255, 255, 255, 0.35); color: #fff; font-size: calc(30px * var(--ts)); display: flex; align-items: center; justify-content: center; pointer-events: auto; }
+.tbtn.on { background: rgba(255, 255, 255, 0.3); }
+.tbtn.small { width: calc(46px * var(--ts)); height: calc(46px * var(--ts)); font-size: calc(22px * var(--ts)); border-radius: calc(10px * var(--ts)); }
+#tJump { right: calc(24px * var(--ts)); bottom: calc(120px * var(--ts)); }
+#tSneak { right: calc(94px * var(--ts)); bottom: calc(60px * var(--ts)); }
+#tAttack { right: calc(94px * var(--ts)); bottom: calc(190px * var(--ts)); }
+#tUse { right: calc(24px * var(--ts)); bottom: calc(260px * var(--ts)); }
+#tSprint { right: calc(164px * var(--ts)); bottom: calc(60px * var(--ts)); }
+#tInv { right: max(12px, env(safe-area-inset-right)); top: 12px; }
+#tPause { right: calc(max(12px, env(safe-area-inset-right)) + 52px * var(--ts)); top: 12px; }
+#tDrop { right: calc(max(12px, env(safe-area-inset-right)) + 104px * var(--ts)); top: 12px; }
+#tChat { right: calc(max(12px, env(safe-area-inset-right)) + 156px * var(--ts)); top: 12px; }
+#tView { right: calc(max(12px, env(safe-area-inset-right)) + 208px * var(--ts)); top: 12px; }
+.touch #bottom { --hs: calc(2px * var(--ui, 1)); }
 
 @media (max-width: 700px), (max-height: 520px) {
-  #bottom { --hs: 1.75px; }
+  #bottom { --hs: calc(1.75px * var(--ui, 1)); }
   .slot { width: 34px; height: 34px; }
   .creative-grid { grid-template-columns: repeat(9, 34px); }
   .recipes { grid-template-columns: repeat(5, 34px); }
@@ -180,3 +185,19 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0b0d; col
   .splash { margin-left: 120px; font-size: 20px; }
 }
 .nojs { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+
+/* -------------------------------------------------------------------- MANETTE */
+#padCursor { position: fixed; left: 0; top: 0; width: 22px; height: 33px; margin: -1px 0 0 -1px; pointer-events: none; z-index: 10000;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 18'%3E%3Cpolygon points='0.5,0.5 0.5,15.5 4.2,12 6.8,17.5 9.2,16.4 6.6,11.2 11.5,11.2' fill='%23fff' stroke='%23000' stroke-width='1'/%3E%3C/svg%3E") no-repeat 0 0 / contain;
+  filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.35)); }
+.slot.pad-hover::after { content: ''; position: absolute; inset: 0; background: rgba(255, 255, 255, 0.45); pointer-events: none; }
+#hotbar .slot.pad-hover::after { display: none; }
+.btn.pad-hover { background: var(--btn-hover); box-shadow: inset 2px 2px 0 #bfc4ff, inset -2px -2px 0 #4a4f7a; color: #ffffa0; }
+.world.pad-hover, .tab.pad-hover { border-color: #ffffa0; }
+.field:has(input.pad-hover) { outline: 2px solid #ffffa0; outline-offset: 2px; }
+body.pad, body.pad * { cursor: none !important; }
+.preset-desc { font-size: 18px; color: #c8c8a0; justify-content: center; text-align: center; }
+.flabel { display: block; }
+/* sur écran tactile, les messages passent sous la rangée de boutons et à gauche des boutons d'action */
+.touch #toasts { top: calc(64px * var(--ts, 1)); left: 10px; right: auto; align-items: flex-start; }
+.touch .toast { max-width: min(360px, 52vw); font-size: 18px; padding: 6px 10px; }

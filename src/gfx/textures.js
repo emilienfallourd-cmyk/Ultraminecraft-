@@ -263,7 +263,9 @@ function leaves(t, base, o = {}) {
     if (hole < (o.holes || 0.27)) { t.set(x, y, [40, 60, 30], 0); t.setH(x, y, 0); return; }
     const leaf = t.n(2).at(x, y, 16);
     let s = clamp01(v * 0.6 + leaf * 0.5 + (t.r() - 0.5) * 0.25);
-    const c = col ? mul(pal(palette(o.color, 5, 0.5), s), 1) : pal(pl, s);
+    let c = col ? mul(pal(palette(o.color, 5, 0.5), s), 1) : pal(pl, s);
+    // deuxième teinte mêlée (feuillages d'automne)
+    if (o.color2) c = mix(c, mul(hex(o.color2), 0.75 + s * 0.45), clamp01(t.n(3).at(x, y, 8) * 1.6 - 0.45));
     if (col) t.set(x, y, c); else t.tint(x, y, c);
     t.setH(x, y, 0.3 + s * 0.6);
     t.setS(x, y, 0.25);
@@ -626,6 +628,25 @@ P('jungle_leaves', (t) => leaves(t, null, { holes: 0.2 }));
 P('acacia_leaves', (t) => leaves(t, null, { holes: 0.3 }));
 P('dark_oak_leaves', (t) => leaves(t, null, { holes: 0.2 }));
 P('cherry_leaves', (t) => leaves(t, null, { color: '#f1a9cf', holes: 0.25 }));
+P('red_maple_leaves', (t) => leaves(t, null, { color: '#b5301c', color2: '#e0622a', holes: 0.25 }));
+P('orange_maple_leaves', (t) => leaves(t, null, { color: '#d9731c', color2: '#f0b032', holes: 0.25 }));
+P('golden_birch_leaves', (t) => leaves(t, null, { color: '#e2b42a', color2: '#f3d860', holes: 0.3 }));
+// litière de feuilles mortes : petites feuilles éparpillées
+P('leaf_litter', (t) => {
+  t.clear(); t.each((x, y) => t.set(x, y, [0, 0, 0], 0)); t.flatNormal = true;
+  const cols = ['#a3301c', '#c9561c', '#dd8a26', '#e6b23a', '#8a5a2a', '#6b3d1e', '#b8441e'].map(hex);
+  for (let i = 0; i < 46; i++) {
+    const cx = t.r() * S, cy = t.r() * S, a = t.r() * Math.PI, len = 2.2 + t.r() * 2.2, wid = 1 + t.r() * 1.1;
+    const c = cols[Math.floor(t.r() * cols.length)];
+    const ca = Math.cos(a), sa = Math.sin(a);
+    for (let y = -4; y <= 4; y++) for (let x = -4; x <= 4; x++) {
+      const u = x * ca + y * sa, v = -x * sa + y * ca;
+      if ((u * u) / (len * len) + (v * v) / (wid * wid) > 1) continue;
+      const vein = Math.abs(v) < 0.35;
+      t.set(cx + x, cy + y, mul(c, vein ? 0.72 : 0.9 + t.r() * 0.2)); t.setH(cx + x, cy + y, 0.6);
+    }
+  }
+});
 
 const sapling = (trunk, leaf, o = {}) => (t) => crossPlant(t, () => {
   stem(t, 15, 18, 31, hex(trunk));
@@ -642,6 +663,7 @@ P('jungle_sapling', sapling('#5a4a1e', '#3f8f1f'));
 P('acacia_sapling', sapling('#696159', '#7f9a2a'));
 P('dark_oak_sapling', sapling('#3b2c1a', '#2f6b1f'));
 P('cherry_sapling', sapling('#3b1e24', '#f1a9cf'));
+P('maple_sapling', sapling('#6b5130', '#c8461e'));
 
 // ---------------------------------------------------- BLOCS FONCTIONNELS
 P('crafting_table_top', (t) => {
@@ -806,6 +828,126 @@ P('jukebox_top', (t) => {
   t.rect(5, 14, 26, 17, hex('#0e0e0e')); t.rect(5, 14, 26, 14, hex('#000000'));
   for (let x = 5; x <= 26; x++) { t.setH(x, 15, 0.05); t.setH(x, 16, 0.05); }
   t.rect(13, 6, 18, 9, hex('#3fd8d8')); t.set(14, 7, hex('#bff8f8'));
+});
+// ------------------------------------------------------------ REDSTONE
+const transparent = (t) => { t.clear(); t.each((x, y) => t.set(x, y, [0, 0, 0], 0)); t.flatNormal = true; };
+// poudre : niveaux de gris teintés (alpha 0.62) colorés en rouge par le mailleur selon la puissance
+const dust = (t, x, y) => { const v = 175 + t.r() * 80; t.tint(x, y, [v, v, v]); t.setH(x, y, 0.7); };
+P('redstone_dust_dot', (t) => {
+  transparent(t);
+  t.each((x, y) => {
+    const dx = x + 0.5 - 16, dy = y + 0.5 - 16;
+    const r = Math.hypot(dx, dy);
+    const arm = (Math.abs(dx) < 3.2 && Math.abs(dy) < 8.5) || (Math.abs(dy) < 3.2 && Math.abs(dx) < 8.5);
+    if (r < 6.6 + t.r() * 0.8 || arm) dust(t, x, y);
+  });
+  for (let i = 0; i < 10; i++) { const a = t.r() * 6.283, d = 7 + t.r() * 3; dust(t, 16 + Math.cos(a) * d, 16 + Math.sin(a) * d); }
+});
+P('redstone_dust_line', (t) => {
+  transparent(t);
+  for (let y = 0; y < S; y++) {
+    const w0 = 13 - (t.r() < 0.3 ? 1 : 0), w1 = 19 + (t.r() < 0.3 ? 1 : 0);
+    for (let x = w0; x < w1; x++) dust(t, x, y);
+    if (t.r() < 0.25) dust(t, t.r() < 0.5 ? w0 - 2 : w1 + 1, y);
+  }
+});
+const rsTorch = (lit) => (t) => {
+  PAINTERS.get('torch')(t);
+  const fl = lit ? [hex('#ffd0c8'), hex('#ff4a3a'), hex('#d81408'), hex('#8a0a04')] : [hex('#7a3a34'), hex('#5c1a14'), hex('#45110d'), hex('#300b08')];
+  for (let y = 12; y < 17; y++) for (let x = 14; x < 18; x++) { t.set(x, y, fl[Math.min(3, Math.abs(y - 13) + (x === 14 || x === 17 ? 1 : 0))]); t.setE(x, y, lit ? 1 : 0); }
+};
+P('redstone_torch', rsTorch(true));
+P('redstone_torch_off', rsTorch(false));
+P('lever', (t) => {
+  transparent(t);
+  for (let y = 12; y < 32; y++) { t.set(14, y, hex('#6b4f2c')); t.set(15, y, hex('#8f7046')); t.set(16, y, hex('#7c5d34')); t.set(17, y, hex('#553d22')); }
+  for (let y = 12; y < 16; y++) for (let x = 14; x < 18; x++) t.set(x, y, mix(hex('#9a9a9a'), hex('#d0d0d0'), (17 - x) / 4));
+});
+const repeaterTop = (on) => (t) => {
+  noisy(t, '#a0a0a0', { p: 8, spread: 0.12, contrast: 1 }); frame(t, hex('#7f7f7f'), 1, { dark: 0.9 });
+  const red = on ? hex('#ff3a20') : hex('#6e1810');
+  for (let y = 3; y < 29; y++) for (let x = 15; x < 17; x++) { t.set(x, y, mul(red, 0.85 + t.r() * 0.3)); t.setH(x, y, 0.3); if (on) t.setE(x, y, 0.5); }
+  // flèche vers l'avant (bas de la texture)
+  for (let k = 0; k < 5; k++) { t.set(15 - k, 28 - k, red); t.set(16 + k, 28 - k, red); if (on) { t.setE(15 - k, 28 - k, 0.5); t.setE(16 + k, 28 - k, 0.5); } }
+};
+P('repeater', repeaterTop(false));
+P('repeater_on', repeaterTop(true));
+const obsBase = (t) => { noisy(t, '#6e6e6e', { p: 6, spread: 0.2, contrast: 1.2 }); frame(t, hex('#4a4a4a'), 2, { dark: 0.8 }); };
+P('observer_front', (t) => {
+  obsBase(t);
+  for (const y0 of [9, 19]) { t.rect(5, y0, 27, y0 + 4, hex('#2a2a2a'), 1, 0.1); t.rect(6, y0 + 1, 26, y0 + 3, hex('#141414'), 1, 0.05); }
+});
+P('observer_side', (t) => {
+  obsBase(t);
+  t.rect(4, 14, 28, 18, hex('#3a3a3a'), 1, 0.2);
+  for (let k = 0; k < 4; k++) { t.set(22 + k, 12 + k, hex('#3a3a3a')); t.set(22 + k, 19 - k, hex('#3a3a3a')); }
+});
+const obsBack = (on) => (t) => {
+  obsBase(t);
+  t.rect(8, 8, 24, 24, hex('#565656'), 1, 0.4);
+  t.rect(13, 13, 19, 19, on ? hex('#ff3a20') : hex('#5a1410'), 1, 0.8);
+  if (on) for (let y = 13; y < 19; y++) for (let x = 13; x < 19; x++) t.setE(x, y, 1);
+};
+P('observer_back', obsBack(false));
+P('observer_back_on', obsBack(true));
+const dlTop = (inv) => (t) => {
+  const glassA = inv ? hex('#3a4a7a') : hex('#c9d8e8'), glassB = inv ? hex('#26325a') : hex('#9fb4cc');
+  t.each((x, y) => {
+    const cx = x % 11, cy = y % 11;
+    const edge = cx === 0 || cy === 0;
+    t.set(x, y, edge ? hex('#e9e2d6') : mix(glassA, glassB, (cx + cy) / 20 + t.r() * 0.1));
+    t.setH(x, y, edge ? 0.7 : 0.4); t.setS(x, y, edge ? 0.3 : 0.85);
+  });
+};
+P('daylight_detector_top', dlTop(false));
+P('daylight_detector_inverted_top', dlTop(true));
+P('daylight_detector_side', (t) => { planks(t, '#9c7a4a'); t.rect(0, 20, 32, 22, hex('#e9e2d6'), 1, 0.7); });
+const lamp = (on) => (t) => {
+  t.each((x, y) => {
+    const lx = x % 16, ly = y % 16;
+    const frameP = lx < 2 || ly < 2 || lx > 13 || ly > 13;
+    const v = t.n(0).at(x, y, 6);
+    if (frameP) { t.set(x, y, mix(hex('#5a3a22'), hex('#7a5232'), v)); t.setH(x, y, 0.8); }
+    else if (on) { t.set(x, y, mix(hex('#f6c56a'), hex('#fff3c4'), v)); t.setE(x, y, 0.85 + v * 0.15); t.setH(x, y, 0.4); }
+    else { t.set(x, y, mix(hex('#3c2a1c'), hex('#5e4430'), v)); t.setH(x, y, 0.4); }
+    t.setS(x, y, frameP ? 0.15 : 0.6);
+  });
+};
+P('redstone_lamp', lamp(false));
+P('redstone_lamp_on', lamp(true));
+P('piston_top', (t) => {
+  planks(t, '#9c7a4a');
+  frame(t, hex('#5c4428'), 1);
+  t.rect(11, 11, 21, 21, hex('#9a9a9a'), 1, 0.8); t.rect(13, 13, 19, 19, hex('#c8c8c8'), 1, 0.9);
+  for (let i = 11; i < 21; i++) { t.set(i, 11, hex('#dcdcdc')); t.set(11, i, hex('#dcdcdc')); }
+});
+P('piston_top_sticky', (t) => {
+  PAINTERS.get('piston_top')(t);
+  t.each((x, y) => {
+    if (x < 3 || y < 3 || x > 28 || y > 28) return;
+    const v = t.n(3).at(x, y, 5);
+    t.set(x, y, mix(hex('#4f9a3e'), hex('#8ed06e'), v)); t.setS(x, y, 0.9); t.setH(x, y, 0.6 + v * 0.2);
+  });
+});
+P('piston_side', (t) => {
+  cobble(t, '#7a7a7a', { mortar: '#4a4a4a' });
+  for (let y = 0; y < 8; y++) for (let x = 0; x < S; x++) { const v = t.n(4).at2(x, y, 16, 2); t.set(x, y, mix(hex('#8a6a3e'), hex('#ab8a58'), v)); t.setH(x, y, 0.6); }
+  t.rect(0, 7, 32, 8, hex('#5c4428'), 1, 0.2);
+  t.rect(13, 8, 19, 32, hex('#8c8c8c'), 1, 0.7); t.rect(14, 8, 15, 32, hex('#b8b8b8'));
+});
+P('piston_bottom', (t) => {
+  cobble(t, '#7a7a7a', { mortar: '#4a4a4a' });
+  frame(t, hex('#555555'), 1);
+  t.rect(12, 12, 20, 20, hex('#8c8c8c'), 1, 0.7);
+});
+P('piston_inner', (t) => {
+  cobble(t, '#6a6a6a', { mortar: '#404040' });
+  t.rect(10, 10, 22, 22, hex('#2a2a2a'), 1, 0.1);
+  t.rect(12, 12, 20, 20, hex('#9a9a9a'), 1, 0.6);
+});
+P('piston_arm', (t) => {
+  t.each((x, y) => { const v = t.n(0).at2(y, x, 16, 2); t.set(x, y, mix(hex('#8a6a3e'), hex('#b08e5c'), v)); t.setH(x, y, 0.55); t.setS(x, y, 0.15); });
+  for (let y = 0; y < S; y++) { t.set(12, y, hex('#5c4428')); t.set(19, y, hex('#5c4428')); }
 });
 P('sea_lantern', (t) => {
   t.each((x, y) => {

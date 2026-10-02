@@ -280,6 +280,7 @@ export class Player extends Entity {
   onHurt(amount, src) {
     const g = this.game;
     if (g.audio) g.audio.play('hurt', this.x, this.y, this.z);
+    if (g.input && g.input.pad) g.input.pad.rumble(Math.min(1, 0.25 + amount * 0.08), 140 + Math.min(260, amount * 25));
     if (g.onPlayerHurt) g.onPlayerHurt(amount, src);
   }
 

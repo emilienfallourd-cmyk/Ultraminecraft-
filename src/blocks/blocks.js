@@ -356,6 +356,46 @@ B('cracked_mossy_bricks', 'Pierres taillées moussues fissurées', { ...stone, h
 B('note_block', 'Bloc musical', { ...wood, hardness: 0.8, interact: 'note', cat: 'redstone' });
 B('jukebox', 'Juke-box', { ...wood, hardness: 2, interact: 'jukebox', tex: { top: 'jukebox_top', bottom: 'jukebox_side', side: 'jukebox_side' }, cat: 'deco' });
 
+// --------------------------------------------------------------- REDSTONE
+const rsSmall = { shape: 'model', render: 'cutout', solid: false, opaque: false, hardness: 0, cat: 'redstone' };
+const rsTorch = { shape: 'model', model: 'torch', render: 'cutout', solid: false, opaque: false, hardness: 0, sound: 'wood', support: 'torch', cat: 'redstone' };
+B('redstone_wire', 'Poudre de redstone', { ...rsSmall, model: 'redstone_wire', boxes: 'wire', tint: 7, support: 'below', item: false, drops: 'redstone', sound: 'stone', tex: 'redstone_dust_dot', extra: { rs: 'wire' } });
+B('redstone_torch', 'Torche de redstone', { ...rsTorch, light: 7, tex: 'redstone_torch', extra: { rs: 'torch' } });
+B('redstone_torch_off', 'Torche de redstone éteinte', { ...rsTorch, tex: 'redstone_torch_off', item: false, drops: 'redstone_torch', extra: { rs: 'torch_off' } });
+B('lever', 'Levier', { ...rsSmall, model: 'lever', boxes: 'lever', support: 'attach', interact: 'lever', tex: 'cobblestone', sound: 'wood', hardness: 0.5, extra: { rs: 'lever' } });
+B('stone_button', 'Bouton en pierre', { ...rsSmall, model: 'button', boxes: 'button', support: 'attach', interact: 'button', tex: 'stone', sound: 'stone', hardness: 0.5, extra: { rs: 'button', pulse: 20 } });
+B('oak_button', 'Bouton en chêne', { ...rsSmall, model: 'button', boxes: 'button', support: 'attach', interact: 'button', tex: 'oak_planks', sound: 'wood', hardness: 0.5, extra: { rs: 'button', pulse: 30 } });
+B('stone_pressure_plate', 'Plaque de pression en pierre', { ...rsSmall, model: 'plate', boxes: 'plate', support: 'below', tex: 'stone', sound: 'stone', hardness: 0.5, extra: { rs: 'plate' } });
+B('oak_pressure_plate', 'Plaque de pression en chêne', { ...rsSmall, model: 'plate', boxes: 'plate', support: 'below', tex: 'oak_planks', sound: 'wood', hardness: 0.5, extra: { rs: 'plate', wooden: true } });
+B('redstone_lamp', 'Lampe à redstone', { hardness: 0.3, sound: 'glass', cat: 'redstone', extra: { mech: 'lamp' } });
+B('redstone_lamp_on', 'Lampe à redstone allumée', { hardness: 0.3, sound: 'glass', light: 15, item: false, drops: 'redstone_lamp', tex: 'redstone_lamp_on', extra: { mech: 'lamp' } });
+B('repeater', 'Répéteur de redstone', { shape: 'model', model: 'repeater', boxes: 'repeater', render: 'cutout', opaque: false, hardness: 0, support: 'below', interact: 'repeater', tex: 'repeater', sound: 'stone', cat: 'redstone', extra: { rs: 'repeater' } });
+B('observer', 'Observateur', { ...stone, shape: 'model', model: 'observer', opaque: false, filter: 15, hardness: 3, tex: 'observer_front', cat: 'redstone', extra: { rs: 'observer' } });
+B('daylight_detector', 'Capteur de lumière du jour', { ...wood, shape: 'model', model: 'daylight', boxes: 'daylight', opaque: false, hardness: 0.2, interact: 'daylight', tex: 'daylight_detector_top', cat: 'redstone', extra: { rs: 'daylight' } });
+B('piston', 'Piston', { shape: 'model', model: 'piston', boxes: 'piston', opaque: false, hardness: 1.5, tool: 'pickaxe', sound: 'stone', tex: 'piston_top', cat: 'redstone', extra: { mech: 'piston' } });
+B('sticky_piston', 'Piston collant', { shape: 'model', model: 'piston', boxes: 'piston', opaque: false, hardness: 1.5, tool: 'pickaxe', sound: 'stone', tex: 'piston_top_sticky', cat: 'redstone', extra: { mech: 'piston', sticky: true } });
+B('piston_head', 'Tête de piston', { shape: 'model', model: 'piston_head', boxes: 'piston_head', opaque: false, hardness: 1.5, tool: 'pickaxe', sound: 'stone', item: false, drops: null, tex: 'piston_side' });
+// --------------------------------------------------------------- AUTOMNE
+const autumnLeaves = (key, name, sap) => B(key, name, {
+  render: 'cutout', opaque: false, filter: 1, hardness: 0.2, tool: 'hoe', sound: 'grass', cullSame: false, wave: 1, cat: 'nature', flammable: true,
+  drops: (r, tool) => {
+    if (tool === 'shears') return [key];
+    const out = [];
+    if (r.chance(0.05)) out.push(sap);
+    if (r.chance(0.02)) out.push('stick');
+    return out;
+  },
+});
+autumnLeaves('red_maple_leaves', 'Feuilles d\'érable rouges', 'maple_sapling');
+autumnLeaves('orange_maple_leaves', 'Feuilles d\'érable orangées', 'maple_sapling');
+autumnLeaves('golden_birch_leaves', 'Feuilles de bouleau dorées', 'birch_sapling');
+B('maple_sapling', 'Pousse d\'érable', { ...flower, wave: 0, extra: { sapling: 'maple' } });
+B('leaf_litter', 'Litière de feuilles', { shape: 'model', model: 'petals', render: 'cutout', solid: false, opaque: false, hardness: 0, replaceable: true, sound: 'grass', support: 'plant', cat: 'nature' });
+// blocs existants reliés à la redstone
+BLOCK_BY_KEY.redstone_block.rs = 'block';
+BLOCK_BY_KEY.redstone_block.cat = 'redstone';
+for (const [k, m] of [['note_block', 'note'], ['tnt', 'tnt'], ['oak_door', 'door'], ['bell', 'bell']]) BLOCK_BY_KEY[k].mech = m;
+
 // Applique les modèles / collisions
 for (const b of BLOCKS) {
   if (b.model) b.modelFn = MODELS[b.model];

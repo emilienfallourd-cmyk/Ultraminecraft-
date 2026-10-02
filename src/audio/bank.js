@@ -316,6 +316,13 @@ const E = {
   warden_hurt: (r) => growlV(r, 0.7, 110, { vowel: 'a' }),
   warden_death: (r) => growlV(r, 3, 95, { f0: (t) => 95 * Math.pow(0.3, t), vowel: vlerp('a', 'u') }),
   click: (r) => { const o = buffer(0.08); modal(o, 0, [[2200, 0.012, 0.6], [3700, 0.008, 0.3]], 1); click(o, 0, 0.3, r); return o; },
+  lever: (r) => { const o = buffer(0.2); click(o, 0, 0.8, r, 1800); modal(o, 0, [[620, 0.03, 0.6], [1450, 0.02, 0.35], [2900, 0.01, 0.2]], 1, r, 0.06); thump(o, 0, { f: 140, f2: 90, dur: 0.04, amp: 0.4 }); return o; },
+  button: (r) => { const o = buffer(0.15); click(o, 0, 0.7, r, 2600); modal(o, 0, [[900, 0.02, 0.5], [2100, 0.012, 0.3]], 1, r, 0.05); return o; },
+  button_off: (r) => { const o = buffer(0.12); click(o, 0, 0.45, r, 2000); modal(o, 0, [[760, 0.015, 0.4], [1700, 0.01, 0.2]], 1, r, 0.05); return o; },
+  plate_on: (r) => { const o = buffer(0.15); thump(o, 0, { f: 120, f2: 80, dur: 0.05, amp: 0.6 }); click(o, 0, 0.5, r, 1500); return o; },
+  plate_off: (r) => { const o = buffer(0.12); click(o, 0, 0.35, r, 1300); thump(o, 0, { f: 100, f2: 70, dur: 0.04, amp: 0.3 }); return o; },
+  piston_out: (r) => { const o = buffer(0.5); whoosh(o, 0, { dur: 0.16, f1: 500, f2: 1600, amp: 0.5, r }); thump(o, 0.08, { f: 110, f2: 60, dur: 0.12, amp: 1 }); modal(o, 0.08, [[310, 0.06, 0.5], [780, 0.04, 0.3], [1600, 0.02, 0.2]], 1, r, 0.08); grains(o, 0.08, { count: 18, spread: 0.08, fLo: 500, fHi: 3000, amp: 0.4, r }); return o; },
+  piston_in: (r) => { const o = buffer(0.45); whoosh(o, 0, { dur: 0.14, f1: 1400, f2: 450, amp: 0.45, r }); thump(o, 0.07, { f: 95, f2: 55, dur: 0.1, amp: 0.8 }); modal(o, 0.07, [[280, 0.05, 0.5], [700, 0.03, 0.25]], 1, r, 0.08); return o; },
   splash: (r) => splash(r, 1),
   splash_small: (r) => splash(r, 0.3),
 };
