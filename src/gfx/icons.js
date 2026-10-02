@@ -266,6 +266,7 @@ function genericKind(k) {
   if (k.endsWith('_nugget')) return '__nugget';
   if (k.startsWith('raw_')) return '__raw';
   if (k.startsWith('cooked_')) return '__cooked';
+  if (k.startsWith('disc_')) return '__disc';
   return null;
 }
 const METAL = { iron: '#e4e4e4', gold: '#fcd843', copper: '#e0794f', netherite: '#4d4448' };
@@ -376,7 +377,10 @@ const SPRITES = {
   phantom_membrane: (s) => s.poly([[3, 4], [13, 3], [11, 13], [4, 11]], '#c8c0a0'),
   ink_sac: (s) => s.circle(8, 9, 5, '#2a2a3a'),
   glow_ink_sac: (s) => s.circle(8, 9, 5, '#2ad0c0'),
-  disc_cat: (s) => { s.circle(8, 8, 6, '#1a1a1a'); s.circle(8, 8, 2, '#4ab83a'); },
+  __disc: (s, d) => {
+    s.circle(8, 8, 6.4, (r, x, y) => (r > 0.8 ? '#2a2a2a' : r > 0.45 ? ((x + y) % 3 ? '#161616' : '#232323') : r > 0.2 ? d.color || '#4ab83a' : '#0a0a0a'));
+    s.set(5, 4, '#6a6a6a'); s.set(4, 5, '#5a5a5a'); s.set(10, 3, '#4a4a4a');
+  },
   goat_horn: (s) => s.poly([[3, 12], [6, 5], [12, 2], [10, 6], [7, 13]], '#c8b890'),
   shulker_shell: (s) => s.ellipse(8, 8, 6, 5, (d, x, y) => (y < 8 ? '#a87aa8' : '#7a5a7a')),
 };

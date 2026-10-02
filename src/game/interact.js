@@ -142,6 +142,7 @@ export class Interaction {
   // ------------------------------------------------------------ ATTAQUE
   onAttackClick() {
     const g = this.game, p = this.player;
+    if (this.target && !this.targetEntity && this.target.id === K.note_block) g.playNoteBlock(this.target.x, this.target.y, this.target.z);
     p.swinging = true; p.swing = 0;
     g.hand.swing();
     if (this.targetEntity) { this.attack(this.targetEntity); return; }
@@ -198,7 +199,7 @@ export class Interaction {
     if (g.ui.isScreenOpen() || p.dead) { this.mining = null; this.stopUsing(false); return; }
     // minage maintenu
     if (this.attackHeld && this.target && !this.targetEntity) {
-      if (p.creative) { if (this.creativeBreakCd === 0) { this.creativeBreak(); this.creativeBreakCd = 5; } }
+      if (p.creative) { if (this.creativeBreakCd === 0 && !(this.target.id === K.note_block && !p.sneaking)) { this.creativeBreak(); this.creativeBreakCd = 5; } }
       else if (!p.spectator) this.mineTick();
       p.swinging = true;
       if (g.tickCount % 4 === 0) g.hand.swing();
@@ -630,6 +631,31 @@ export class Interaction {
         if (held && (held.id === ITEM.flint_and_steel || held.id === ITEM.fire_charge)) { w.setBlock(x, y, z, 0); g.primeTnt(x, y, z); if (held.id === ITEM.flint_and_steel) p.damageHeld(1); else p.consumeHeld(1); return true; }
         return false;
       case 'bell': g.audio.play('bell', x, y, z); return true;
+      case 'note': {
+        if (p.sneaking && held && held.def.isBlock) return false;
+        w.setMeta(x, y, z, (w.getMeta(x, y, z) + 1) % 25);
+        g.playNoteBlock(x, y, z, true);
+        return true;
+      }
+      case 'jukebox': {
+        let be = w.getBlockEntity(x, y, z);
+        if (be && be.disc != null) {
+          // éjecter le disque
+          g.dropItem(new ItemStack(be.disc, 1), x + 0.5, y + 1.1, z + 0.5);
+          g.audio.stopJukebox(x, y, z);
+          be.disc = null; w.setBlockEntity(x, y, z, be);
+          return true;
+        }
+        if (held && held.def.disc) {
+          be = be || { type: 'jukebox', disc: null };
+          be.disc = held.id; w.setBlockEntity(x, y, z, be);
+          if (!p.creative) p.consumeHeld(1);
+          g.audio.playJukebox(held.def.key, x, y, z);
+          g.ui.hud.action('En cours de lecture : ' + held.def.name.replace('Disque de musique : ', ''));
+          return true;
+        }
+        return false;
+      }
       case 'eye': return false;
     }
     if (t.id === K.sweet_berry_bush && w.getMeta(x, y, z) >= 2) {

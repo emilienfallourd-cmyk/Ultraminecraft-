@@ -787,6 +787,26 @@ P('rail', (t) => {
   for (let y = 0; y < S; y++) { t.rect(6, y, 8, y, hex('#9a9a9a')); t.set(6, y, hex('#c8c8c8')); t.rect(23, y, 25, y, hex('#9a9a9a')); t.set(23, y, hex('#c8c8c8')); }
   t.flatNormal = true;
 });
+P('note_block', (t) => {
+  planks(t, '#6b4630');
+  for (let gy = 0; gy < 3; gy++) for (let gx = 0; gx < 3; gx++) {
+    const x0 = 6 + gx * 7, y0 = 6 + gy * 7;
+    t.rect(x0, y0, x0 + 4, y0 + 4, hex('#24160e')); t.rect(x0, y0, x0 + 4, y0, hex('#140c07'));
+    for (let k = 0; k < 5; k++) t.setH(x0 + k, y0 + k % 5, 0.1);
+  }
+});
+P('jukebox_side', (t) => {
+  planks(t, '#6b4630');
+  frame(t, hex('#3d281b'), 2);
+  t.rect(3, 3, 28, 4, hex('#8a5e40'));
+});
+P('jukebox_top', (t) => {
+  planks(t, '#6b4630');
+  frame(t, hex('#3d281b'), 2);
+  t.rect(5, 14, 26, 17, hex('#0e0e0e')); t.rect(5, 14, 26, 14, hex('#000000'));
+  for (let x = 5; x <= 26; x++) { t.setH(x, 15, 0.05); t.setH(x, 16, 0.05); }
+  t.rect(13, 6, 18, 9, hex('#3fd8d8')); t.set(14, 7, hex('#bff8f8'));
+});
 P('sea_lantern', (t) => {
   t.each((x, y) => {
     const cell = (Math.floor(x / 8) + Math.floor(y / 8)) % 2;

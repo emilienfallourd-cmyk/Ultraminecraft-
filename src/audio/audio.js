@@ -4,6 +4,7 @@
 import { BLOCKS } from '../blocks/blocks.js';
 import { setSampleRate, makeRng, impulse } from './synth.js';
 import { materialSound, creatureSound, effectSound, ambientLoop, ambientShot, splash } from './bank.js';
+import { instrumentSample, compose, INSTRUMENTS, DISCS } from './songs.js';
 
 const VARIANTS = 4;
 
@@ -19,6 +20,10 @@ export class Audio {
     this.seed = 1;
     this.voices = 0;
     this.ambT = { bird: 4, cricket: 3, drip: 6, cave: 60 };
+    this.songs = new Set();
+    this.bgSong = null;
+    this.inst = new Map();
+    this.musicTimer = 15 + Math.random() * 15;
     const unlock = () => { this.init(); };
     addEventListener('pointerdown', unlock, { once: false });
     addEventListener('keydown', unlock, { once: false });
@@ -237,43 +242,106 @@ export class Audio {
       if (T.drip <= 0) { T.drip = 2 + Math.random() * 7; const [x, y, z] = around(16, 4); this.playBuf(this.pick('a:drip', () => ambientShot('drip', this.rng()), 6), x, y + 2, z, { gain: 0.25, rate: 0.85 + Math.random() * 0.3, reverb: 0.8, maxDist: 24 }); }
       if (surface && p.y < 50 && T.cave <= 0) { T.cave = 60 + Math.random() * 120; const [x, y, z] = around(30, 8); this.playBuf(this.pick('a:cave', () => ambientShot('cave', this.rng()), 3), x, y, z, { gain: 0.35, reverb: 0.9, maxDist: 60 }); }
     }
-    // musique
-    this.musicTimer -= dt;
-    if (this.musicTimer <= 0 && (this.settings.musicVolume ?? 0.5) > 0) { this.musicTimer = 150 + Math.random() * 200; this.playMusic(game.dim); }
-  }
-  // musique générative (piano doux)
-  playMusic(dim) {
-    const c = this.ctx;
-    const scales = dim === 1 ? [[0, 1, 5, 7, 8]] : dim === 2 ? [[0, 2, 3, 7, 10]] : [[0, 2, 4, 7, 9], [0, 2, 5, 7, 9], [0, 3, 5, 7, 10]];
-    const sc = scales[Math.floor(Math.random() * scales.length)];
-    const root = dim === 1 ? 45 : dim === 2 ? 50 : [48, 50, 53, 55][Math.floor(Math.random() * 4)];
-    const tempo = 0.55 + Math.random() * 0.4;
-    const n = 28 + Math.floor(Math.random() * 20);
-    let t = 0.5;
-    const note = (midi, time, vel, dur) => {
-      const f = 440 * Math.pow(2, (midi - 69) / 12);
-      const g = c.createGain(); g.connect(this.music);
-      const rv = c.createGain(); rv.gain.value = 0.6; g.connect(rv); rv.connect(this.reverb);
-      const st = c.currentTime + time;
-      for (const [h, a] of [[1, 1], [2, 0.35], [3, 0.12], [4, 0.06]]) {
-        const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = f * h * (1 + (Math.random() - 0.5) * 0.001);
-        const og = c.createGain();
-        og.gain.setValueAtTime(0, st); og.gain.linearRampToValueAtTime(vel * a * 0.09, st + 0.008);
-        og.gain.exponentialRampToValueAtTime(0.0005, st + dur * (1.4 - h * 0.15));
-        o.connect(og); og.connect(g); o.start(st); o.stop(st + dur * 1.5);
-      }
-    };
-    let deg = Math.floor(Math.random() * 5);
-    for (let i = 0; i < n; i++) {
-      if (i % 8 === 0) { // accord de basse
-        const b = sc[Math.floor(Math.random() * 3)];
-        note(root - 12 + b, t, 0.7, 5); note(root - 12 + b + 7, t + 0.05, 0.5, 5);
-      }
-      deg = Math.max(0, Math.min(9, deg + Math.floor(Math.random() * 5) - 2));
-      const midi = root + sc[deg % 5] + 12 * Math.floor(deg / 5);
-      if (Math.random() < 0.85) note(midi, t, 0.4 + Math.random() * 0.4, 3);
-      if (Math.random() < 0.15) note(midi + 12, t + tempo / 2, 0.25, 2);
-      t += tempo * (Math.random() < 0.3 ? 2 : 1);
+    // musique : morceaux en cours (juke-box, ambiance) et prochaine musique d'ambiance
+    this.tickSongs(game);
+    const jukeNear = [...this.songs].some((h) => h.x != null && Math.hypot(h.x - p.x, h.y - p.y, h.z - p.z) < 48);
+    if (this.bgSong) this.bgSong.out.gain.value += ((jukeNear ? 0 : 0.55) - this.bgSong.out.gain.value) * Math.min(1, dt * 1.5);
+    if (!this.bgSong && !jukeNear) {
+      this.musicTimer -= dt;
+      if (this.musicTimer <= 0 && (this.settings.musicVolume ?? 0.5) > 0) this.playMusic(game.dim);
     }
+  }
+
+  // ----------------------------------------------------------- MUSIQUE
+  instrument(name) {
+    let b = this.inst.get(name);
+    if (b) return b;
+    const data = instrumentSample(name);
+    b = this.ctx.createBuffer(1, data.length, this.ctx.sampleRate);
+    b.copyToChannel(data, 0);
+    this.inst.set(name, b);
+    return b;
+  }
+  // vitesse de lecture pour jouer la note MIDI (ramenée dans une plage où le timbre reste naturel)
+  rateFor(name, midi) {
+    const I = INSTRUMENTS[name] || INSTRUMENTS.harp;
+    if (I.drum) return 1;
+    let rate = Math.pow(2, (midi - I.base) / 12);
+    while (rate > 2.6) rate /= 2;
+    while (rate < 0.38) rate *= 2;
+    return rate;
+  }
+  // note d'un bloc musical
+  noteBlock(inst, midi, x, y, z) {
+    if (!this.ready) return;
+    this.playBuf(this.instrument(inst), x, y, z, { gain: 0.9, rate: this.rateFor(inst, midi), reverb: 0.2, maxDist: 48 });
+  }
+  // démarre un morceau (disque ou ambiance), en 3D si une position est donnée
+  startSong(style, seed, x = null, y = null, z = null, gain = 0.9, overrides = {}) {
+    if (!this.ready) return null;
+    const c = this.ctx;
+    const song = compose(style, seed, overrides);
+    const out = c.createGain(); out.gain.value = gain;
+    let panner = null;
+    if (x != null) {
+      panner = c.createPanner();
+      panner.panningModel = 'HRTF'; panner.distanceModel = 'linear'; panner.refDistance = 3; panner.maxDistance = 64; panner.rolloffFactor = 1;
+      if (panner.positionX) { panner.positionX.value = x; panner.positionY.value = y; panner.positionZ.value = z; } else panner.setPosition(x, y, z);
+      out.connect(panner); panner.connect(this.sfx);
+    } else out.connect(this.music);
+    const rv = c.createGain(); rv.gain.value = 0.25; out.connect(rv); rv.connect(this.reverb);
+    // préparer les instruments utilisés
+    for (const e of song.events) if (!this.inst.has(e[1])) this.instrument(e[1]);
+    const h = { song, out, panner, x, y, z, start: c.currentTime + 0.15, idx: 0, done: false };
+    this.songs.add(h);
+    return h;
+  }
+  stopSong(h, fade = 0.6) {
+    if (!h || h.done) return;
+    h.done = true;
+    const c = this.ctx, t = c.currentTime;
+    h.out.gain.cancelScheduledValues(t);
+    h.out.gain.setValueAtTime(h.out.gain.value, t);
+    h.out.gain.linearRampToValueAtTime(0, t + fade);
+    setTimeout(() => { try { h.out.disconnect(); if (h.panner) h.panner.disconnect(); } catch (e) { /* déjà déconnecté */ } }, (fade + 0.3) * 1000);
+    this.songs.delete(h);
+    if (h === this.bgSong) { this.bgSong = null; this.musicTimer = 120 + Math.random() * 120; }
+  }
+  stopAllSongs() { for (const h of [...this.songs]) this.stopSong(h, 0.3); }
+  tickSongs(game) {
+    const c = this.ctx, now = c.currentTime;
+    for (const h of [...this.songs]) {
+      const ev = h.song.events;
+      while (h.idx < ev.length && h.start + ev[h.idx][0] < now + 0.3) {
+        const [t, inst, midi, vel] = ev[h.idx++];
+        const src = c.createBufferSource();
+        src.buffer = this.instrument(inst);
+        src.playbackRate.value = this.rateFor(inst, midi);
+        const g = c.createGain(); g.gain.value = vel * 0.6;
+        src.connect(g); g.connect(h.out);
+        src.start(Math.max(now, h.start + t));
+        // notes qui s'envolent du juke-box
+        if (h.x != null && game && game.particles && Math.random() < 0.08) game.particles.note(h.x, h.y + 0.6, h.z, (midi % 24) / 24);
+      }
+      if (now > h.start + h.song.length) this.stopSong(h, 0.1);
+    }
+  }
+  // juke-box
+  playJukebox(discKey, x, y, z) {
+    this.stopJukebox(x, y, z);
+    const d = DISCS[discKey];
+    const h = this.startSong(d ? d.style : 'ambient', 1000 + Object.keys(DISCS).indexOf(discKey) * 7919, x + 0.5, y + 0.5, z + 0.5, 1);
+    if (h) { h.juke = x + ',' + y + ',' + z; if (this.bgSong) this.stopSong(this.bgSong, 2); }
+    return h;
+  }
+  stopJukebox(x, y, z) { const key = x + ',' + y + ',' + z; for (const h of [...this.songs]) if (h.juke === key) this.stopSong(h, 0.4); }
+  jukeboxPlaying(x, y, z) { const key = x + ',' + y + ',' + z; return [...this.songs].some((h) => h.juke === key); }
+  // musique d'ambiance : morceau calme composé à la volée selon la dimension
+  playMusic(dim) {
+    if (this.bgSong) return;
+    const styles = dim === 1 ? ['ember'] : dim === 2 ? ['cave', 'ocean'] : ['ambient', 'ambient', 'dawn', 'ocean', 'lullaby'];
+    const style = styles[Math.floor(Math.random() * styles.length)];
+    this.bgSong = this.startSong(style, Math.floor(Math.random() * 1e9), null, null, null, 0.55, { drums: null, accent: null });
+    this.musicTimer = 120 + Math.random() * 120;
   }
 }

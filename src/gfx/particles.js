@@ -190,6 +190,11 @@ export class Particles {
     for (let i = 0; i < 18; i++) { const t = i / 18 * 15; this.add(x + dx * t, y + dy * t, z + dz * t, 0, 0, 0, { type: 2, size: 0.9 + i * 0.02, grow: 1.5, life: 0.6, r: 0.4, g: 0.85, b: 0.95, a: 0.7 }); }
   }
   soul(x, y, z) { this.add(x, y, z, 0, 0.04, 0, { type: 2, size: 0.15, life: 1.5, r: 0.3, g: 0.95, b: 1, a: 0.9, drag: 0.98 }); }
+  // note de musique colorée (bloc musical, juke-box)
+  note(x, y, z, hue = 0.3) {
+    const c = (k) => Math.max(0, Math.min(1, Math.abs(((hue + k) % 1) * 6 - 3) - 1));
+    this.add(x + (Math.random() - 0.5) * 0.3, y, z + (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.01, 0.035, (Math.random() - 0.5) * 0.01, { type: 2, size: 0.16, life: 1.3, r: c(0), g: c(2 / 3), b: c(1 / 3), drag: 0.96 });
+  }
   sparkle(x, y, z, r = 1, g = 1, b = 0.5) { this.add(x, y, z, (Math.random() - 0.5) * 0.04, 0.03, (Math.random() - 0.5) * 0.04, { type: 2, size: 0.07, life: 0.8, r, g, b }); }
   drip(x, y, z, lava) { this.add(x, y, z, 0, 0, 0, { type: lava ? 2 : 1, size: 0.06, life: 2, grav: 6, r: lava ? 1 : 0.4, g: lava ? 0.4 : 0.6, b: lava ? 0.1 : 1, a: 0.9, collide: true }); }
   petal(x, y, z) { this.add(x, y, z, 0.02 + Math.random() * 0.02, -0.01, (Math.random() - 0.5) * 0.02, { type: 1, size: 0.07, life: 6, grav: 0.3, r: 1, g: 0.7, b: 0.85, a: 1, drag: 0.99, collide: true }); }

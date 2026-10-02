@@ -1,5 +1,6 @@
 // Registre des objets : blocs, outils, armures, nourriture, divers
 import { BLOCKS, BLOCK } from '../blocks/blocks.js';
+import { DISCS } from '../audio/songs.js';
 
 export const ITEMS = [];       // id -> def
 export const ITEM = {};        // key -> id
@@ -175,6 +176,12 @@ export const SPAWN_EGGS = [
   ['sniffer', 'renifleur', '#871e09', '#25ab70'], ['armadillo', 'tatou', '#ad716d', '#824848'], ['breeze', 'breeze', '#af94df', '#9166df'],
 ];
 for (const [m, fr, c1, c2] of SPAWN_EGGS) I(m + '_spawn_egg', 'Œuf d\'apparition de ' + fr, { cat: 'eggs', use: 'spawn_egg', mob: m, colors: [c1, c2] });
+
+// ------------------------------------------------ DISQUES DE MUSIQUE
+// (ajoutés après tous les autres objets pour garder les identifiants des sauvegardes)
+Object.assign(ITEM_BY_KEY.disc_cat, { name: 'Disque de musique : ' + DISCS.disc_cat.title, stack: 1, cat: 'tools', disc: true, color: DISCS.disc_cat.color });
+for (const [k, d] of Object.entries(DISCS)) if (k !== 'disc_cat') I(k, 'Disque de musique : ' + d.title, { stack: 1, cat: 'tools', disc: true, color: d.color });
+export const DISC_KEYS = Object.keys(DISCS);
 
 // valeurs de combustible des blocs
 const FUEL_BLOCKS = { coal_block: 16000, bookshelf: 300, crafting_table: 300, chest: 300 };

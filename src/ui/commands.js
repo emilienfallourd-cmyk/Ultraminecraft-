@@ -20,7 +20,7 @@ export function runCommand(game, line) {
   const p = game.player;
   switch ((cmd || '').toLowerCase()) {
     case 'help': case '?':
-      return OK('Commandes : /gamemode, /tp, /time, /weather, /give, /summon, /kill, /effect, /xp, /dimension, /locate, /seed, /spawnpoint, /difficulty, /clear, /heal, /boss, /fly, /day, /night');
+      return OK('Commandes : /gamemode, /tp, /time, /weather, /give, /summon, /kill, /effect, /xp, /dimension, /locate, /seed, /spawnpoint, /difficulty, /clear, /heal, /boss, /fly, /day, /night, /musique');
     case 'gamemode': case 'gm': {
       const m = GM[(a[0] || '').toLowerCase()];
       if (m === undefined) return ERR('Usage : /gamemode survival|creative|spectator');
@@ -86,6 +86,15 @@ export function runCommand(game, line) {
       if (a[0] === '@e') { let n = 0; for (const e of game.entities.list) if (e.mobType && !e.dead) { e.damage(1e6, { type: 'kill' }); n++; } return OK(n + ' entités tuées'); }
       p.invulnerable = false; p.damage(1e6, { type: 'kill' }); if (p.creative || p.spectator) p.setGamemode(p.gamemode);
       return OK('Aïe.');
+    }
+    case 'music': case 'musique': {
+      const au = game.audio;
+      if (!au.ready) return ERR('Le son n\'est pas encore activé : cliquez dans le jeu');
+      if ((a[0] || '').toLowerCase() === 'stop') { au.stopAllSongs(); au.musicTimer = 600; return OK('Musique arrêtée'); }
+      if (au.bgSong) au.stopSong(au.bgSong, 1);
+      au.musicTimer = 0; au.bgSong = null;
+      au.playMusic(game.dim);
+      return OK('Musique lancée (volume dans Options → Musique). /musique stop pour arrêter');
     }
     case 'heal': p.health = p.maxHealth; p.food = 20; p.saturation = 5; p.fire = 0; p.air = 300; return OK('Soigné');
     case 'clear': p.inventory.fill(null); game.ui.refresh(); return OK('Inventaire vidé');

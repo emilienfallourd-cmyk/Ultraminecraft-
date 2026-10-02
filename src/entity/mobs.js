@@ -4,7 +4,7 @@ import { Entity, angleLerp } from './entity.js';
 import { buildModel, MODELS, genericQuadruped } from './mobmodels.js';
 import { entityMaterial, itemMesh } from './models.js';
 import { findPath, canSee } from './ai.js';
-import { ITEMS, ITEM, ItemStack, SPAWN_EGGS } from '../items/items.js';
+import { ITEMS, ITEM, ItemStack, SPAWN_EGGS, DISC_KEYS } from '../items/items.js';
 import { BLOCKS, BLOCK as K, B_SOLID, B_FLUID, COLOR_KEYS } from '../blocks/blocks.js';
 import { BIOME as BI } from '../world/biomes.js';
 import { HEIGHT, DAY_LENGTH } from '../constants.js';
@@ -692,6 +692,11 @@ export class Mob extends Entity {
     const g = this.game, d = this.def;
     g.audio.mob(this.mobType, 'death', this.x, this.y + this.eyeHeight, this.z);
     const byPlayer = src && (src.attacker === g.player || (src.attacker && src.attacker.owner === g.player) || (this.lastDamager === g.player));
+    // un creeper tué par la flèche d'un squelette laisse tomber un disque de musique
+    if (this.mobType === 'creeper' && src && src.type === 'arrow' && src.attacker && ['skeleton', 'stray'].includes(src.attacker.mobType)) {
+      const discs = DISC_KEYS.filter((k) => ITEM[k] !== undefined);
+      g.dropItem(new ItemStack(ITEM[discs[Math.floor(Math.random() * discs.length)]], 1), this.x, this.y + 0.5, this.z);
+    }
     if (!this.baby) {
       for (const [k, a, b] of d.drops || []) {
         let n = a + Math.floor(Math.random() * (b - a + 1));

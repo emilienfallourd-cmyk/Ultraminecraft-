@@ -36,6 +36,10 @@ Object.assign(TABLES, {
   ocean_ruin: [['coal', 1, 4, 10], ['stone_axe', 1, 1, 2], ['rotten_flesh', 1, 1, 5], ['emerald', 1, 1, 1], ['wheat', 2, 3, 10], ['gold_nugget', 1, 3, 5], ['fishing_rod', 1, 1, 1], ['heart_of_the_sea', 1, 1, 1]],
 });
 
+// disques de musique dans les donjons, mines, cités antiques, temples et forts
+const DISC_LOOT = ['disc_cat', 'disc_dawn', 'disc_tavern', 'disc_cave', 'disc_ember', 'disc_party', 'disc_ocean', 'disc_lullaby'];
+for (const [t, w] of [['dungeon', 0.6], ['mineshaft', 0.35], ['ancient_city', 0.6], ['jungle_temple', 0.3], ['stronghold', 0.25], ['village', 0.15]]) if (TABLES[t]) for (const d of DISC_LOOT) TABLES[t].push([d, 1, 1, w]);
+
 export function lootChest(table, rng) {
   const t = TABLES[table] || TABLES.dungeon;
   const items = new Array(27).fill(null);

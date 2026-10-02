@@ -18,6 +18,7 @@ import { setPipeline } from './entity/models.js';
 import { ItemEntity, XPOrb, FallingBlock, PrimedTNT, Projectile, EndCrystal, Lightning } from './entity/objects.js';
 import { createMob, naturalSpawn, PlayerModel, MOB_DEFS } from './entity/mobs.js';
 import { Interaction } from './game/interact.js';
+import { noteInstrument, noteMidi, INSTRUMENTS } from './audio/songs.js';
 import { explode } from './game/explosion.js';
 import { Portals } from './game/portals.js';
 import { DragonFight } from './entity/bosses.js';
@@ -93,6 +94,7 @@ export class Game {
   }
 
   stopWorld() {
+    this.audio.stopAllSongs && this.audio.ready && this.audio.stopAllSongs();
     this.running = false;
     this.paused = false;
     if (this.world) { if (!this.demo) this.saveAllChunks(); this.world.dispose(); this.world = null; }
@@ -222,6 +224,18 @@ export class Game {
     }
   }
 
+  // joue la note d'un bloc musical (il faut de l'air au-dessus, comme dans Minecraft)
+  playNoteBlock(x, y, z, tuned = false) {
+    const w = this.world;
+    if (w.getBlock(x, y, z) !== K.note_block) return;
+    if (B_SOLID[w.getBlock(x, y + 1, z)]) return;
+    const n = w.getMeta(x, y, z) % 25;
+    const inst = noteInstrument(BLOCKS[w.getBlock(x, y - 1, z)]);
+    this.audio.noteBlock(inst, noteMidi(inst, n), x + 0.5, y + 0.5, z + 0.5);
+    this.particles.note(x + 0.5, y + 1.2, z + 0.5, n / 24);
+    if (tuned) this.ui.hud.action(`Note ${n} / 24 · ${INSTRUMENTS[inst].name}`);
+  }
+
   saveAllChunks() {
     if (!this.world) return;
     for (const c of this.world.chunks.values()) if (c.modified) { this.store.putChunk(this.meta.id, this.dim, c); c.modified = false; }
@@ -253,6 +267,7 @@ export class Game {
     const be = w.getBlockEntity(x, y, z);
     if (be && be.items && drops) for (const it of be.items) if (it) this.dropItem(ItemStack.from(it), x + 0.5, y + 0.5, z + 0.5);
     if (be && be.type === 'furnace' && drops) for (const k of ['input', 'fuel', 'output']) if (be[k]) this.dropItem(ItemStack.from(be[k]), x + 0.5, y + 0.5, z + 0.5);
+    if (be && be.type === 'jukebox') { if (be.disc != null) this.dropItem(new ItemStack(be.disc, 1), x + 0.5, y + 0.8, z + 0.5); this.audio.stopJukebox(x, y, z); }
     w.setBlock(x, y, z, def.waterlogged ? K.water : 0, 0);
     // moitiés liées
     if (def.key === 'oak_door') { const oy = (meta & 8) ? y - 1 : y + 1; if (w.getBlock(x, oy, z) === id) w.setBlock(x, oy, z, 0); }

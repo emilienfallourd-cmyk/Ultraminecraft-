@@ -41,6 +41,7 @@ Aucune étape de compilation : Three.js est inclus dans `lib/`.
 - **Modes** : Survie, Créatif, Extrême et Spectateur.
 - **Sauvegarde** automatique dans le navigateur (IndexedDB).
 - **Sons** : bruitages synthétisés (pas selon le matériau, casse, voix des créatures, explosions, tonnerre), son 3D, réverbération dans les grottes, ambiances (pluie, vent, eau, oiseaux, grillons).
+- **Musique** : musique d'ambiance composée à la volée (commande `/musique`), juke-box avec 8 disques aux morceaux originaux (Chat, Aube, Taverne, Caverne, Braises, Fête, Océan, Berceuse), blocs musicaux à 25 notes dont l'instrument dépend du bloc placé dessous.
 - **Mobile** : commandes tactiles.
 
 ## Commandes
@@ -61,7 +62,7 @@ Aucune étape de compilation : Three.js est inclus dans `lib/`.
 | F5 | Changer de vue |
 | Échap | Pause |
 
-Commandes utiles : `/gamemode 1`, `/give diamond_sword`, `/summon zombie`, `/boss dragon|wither|warden`, `/dimension nether|end|overworld`, `/time set nuit`, `/weather rain`, `/locate village|outpost|temple|mineshaft|monument`, `/help`.
+Commandes utiles : `/gamemode 1`, `/give diamond_sword`, `/summon zombie`, `/boss dragon|wither|warden`, `/dimension nether|end|overworld`, `/time set nuit`, `/weather rain`, `/locate village|outpost|temple|mineshaft|monument`, `/musique [stop]`, `/help`.
 
 ## Organisation du code
 

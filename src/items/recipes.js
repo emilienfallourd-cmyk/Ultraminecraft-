@@ -36,6 +36,8 @@ shaped('warped_planks', 4, ['L'], { L: 'warped_stem' });
 shaped('stick', 4, ['P', 'P'], { P: '#planks' });
 shaped('crafting_table', 1, ['PP', 'PP'], { P: '#planks' });
 shaped('chest', 1, ['PPP', 'P P', 'PPP'], { P: '#planks' });
+shaped('note_block', 1, ['PPP', 'PRP', 'PPP'], { P: '#planks', R: 'redstone' });
+shaped('jukebox', 1, ['PPP', 'PDP', 'PPP'], { P: '#planks', D: 'diamond' });
 shaped('barrel', 1, ['PSP', 'P P', 'PSP'], { P: '#planks', S: 'oak_slab' });
 shaped('furnace', 1, ['CCC', 'C C', 'CCC'], { C: '#stone_tool' });
 shaped('torch', 4, ['C', 'S'], { C: '#coals', S: 'stick' });

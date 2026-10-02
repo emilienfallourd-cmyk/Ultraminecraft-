@@ -180,8 +180,14 @@ export class Menus {
         <kbd>T</kbd> discussion · <kbd>/</kbd> commande · <kbd>F1</kbd> masquer l'ATH · <kbd>F2</kbd> capture · <kbd>F3</kbd> débogage · <kbd>F5</kbd> vue · <kbd>C</kbd> zoom · <kbd>Échap</kbd> pause<br><br>
         <b>Tactile</b> : joystick à gauche, glisser pour regarder, toucher pour poser/utiliser, appui long pour miner/attaquer.<br><br>
         <b>Commandes</b> : /gamemode survival|creative|spectator · /tp x y z · /time set day|night · /weather clear|rain|thunder ·
-        /give &lt;objet&gt; [n] · /summon &lt;créature&gt; · /dimension overworld|nether|end · /locate village|stronghold|fortress|ancient_city|end_city ·
-        /effect &lt;effet&gt; · /xp n · /kill · /heal · /seed · /spawnpoint · /difficulty n · /clear · /boss dragon|wither|warden<br><br>
+        /give &lt;objet&gt; [n] · /summon &lt;créature&gt; · /dimension overworld|nether|end · /locate village|outpost|temple|mineshaft|monument|stronghold|ancient_city (Nether : fortress|bastion) ·
+        /effect &lt;effet&gt; · /xp n · /kill · /heal · /seed · /spawnpoint · /difficulty n · /clear · /boss dragon|wither|warden · /musique [stop]<br><br>
+        <b>Musique</b> : la musique d'ambiance se lance seule (volume dans Options → Musique) ou avec /musique.
+        <b>Juke-box</b> (8 planches + 1 diamant) : clic droit avec un disque pour l'écouter, encore un clic droit pour le reprendre.
+        Les disques se trouvent dans les coffres des donjons, mines, temples et cités antiques, ou quand un squelette tue un creeper.
+        <b>Bloc musical</b> (8 planches + 1 redstone) : clic droit pour changer la note (25 notes), clic gauche pour la jouer ;
+        l'instrument dépend du bloc en dessous (bois : contrebasse, pierre : grosse caisse, sable : caisse claire, verre : charleston, or : cloche,
+        argile : flûte, laine : guitare, os : xylophone, fer : vibraphone, foin : banjo, glowstone : piano électrique, émeraude : 8 bits, citrouille : didgeridoo, autre : harpe).<br><br>
         <b>Objectif</b> : survivre, construire un portail du Nether (obsidienne 4×5 + briquet), trouver des blazes, fabriquer des yeux de l'Ender,
         localiser le fort et vaincre le Dragon de l'Ender. Osez ensuite invoquer le Wither… ou réveiller le Warden dans les abîmes.
       </div>

@@ -353,6 +353,8 @@ B('sponge', 'Éponge', { hardness: 0.6, tool: 'hoe', sound: 'grass', cat: 'deco'
 B('wet_sponge', 'Éponge mouillée', { hardness: 0.6, tool: 'hoe', sound: 'grass', cat: 'deco' });
 B('rail', 'Rail', { shape: 'model', model: 'rail', boxes: 'rail', render: 'cutout', opaque: false, solid: false, hardness: 0.7, tool: 'pickaxe', sound: 'metal', support: 'below', cat: 'redstone' });
 B('cracked_mossy_bricks', 'Pierres taillées moussues fissurées', { ...stone, hardness: 1.5, tex: 'mossy_stone_bricks' });
+B('note_block', 'Bloc musical', { ...wood, hardness: 0.8, interact: 'note', cat: 'redstone' });
+B('jukebox', 'Juke-box', { ...wood, hardness: 2, interact: 'jukebox', tex: { top: 'jukebox_top', bottom: 'jukebox_side', side: 'jukebox_side' }, cat: 'deco' });
 
 // Applique les modèles / collisions
 for (const b of BLOCKS) {
