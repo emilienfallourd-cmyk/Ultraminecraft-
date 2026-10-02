@@ -762,15 +762,15 @@ export class Mob extends Entity {
     const head = P.head;
     if (head) {
       head.rotation.y += angleLerp(0, this.headYaw - by, 1) * 0.8;
-      head.rotation.x += -this.headPitch * 0.8;
+      head.rotation.x += this.headPitch * 0.8;
     }
     if (P.rightLeg) { P.rightLeg.rotation.x += sw; P.leftLeg.rotation.x -= sw; }
     if (P.rightArm) {
-      if (this.def.armsUp) { P.rightArm.rotation.x += -Math.PI / 2 + Math.sin(t * 0.07) * 0.05; P.leftArm.rotation.x += -Math.PI / 2 - Math.sin(t * 0.07) * 0.05; }
+      if (this.def.armsUp) { P.rightArm.rotation.x += Math.PI / 2 + Math.sin(t * 0.07) * 0.05; P.leftArm.rotation.x += Math.PI / 2 - Math.sin(t * 0.07) * 0.05; }
       else if (this.mobType === 'iron_golem') { P.rightArm.rotation.x += -sw * 0.6; P.leftArm.rotation.x += sw * 0.6; }
-      else if (this.aiming > 0 || (this.def.kind === 'ranged' && this.target)) { P.rightArm.rotation.x += -Math.PI / 2; P.leftArm.rotation.x += -Math.PI / 2 + 0.3; P.leftArm.rotation.y += 0.4; }
+      else if (this.aiming > 0 || (this.def.kind === 'ranged' && this.target)) { P.rightArm.rotation.x += Math.PI / 2 + this.headPitch; P.leftArm.rotation.x += Math.PI / 2 - 0.3 + this.headPitch; P.leftArm.rotation.y -= 0.4; }
       else { P.rightArm.rotation.x += -sw * 0.7; P.leftArm.rotation.x += sw * 0.7; }
-      if (this.swingT !== undefined && this.swingT < 6) { const s = Math.sin(this.swingT / 6 * Math.PI); P.rightArm.rotation.x -= s * 1.2; if (this.mobType === 'iron_golem') P.leftArm.rotation.x -= s * 1.2; }
+      if (this.swingT !== undefined && this.swingT < 6) { const s = Math.sin(this.swingT / 6 * Math.PI); P.rightArm.rotation.x += s * 1.2; if (this.mobType === 'iron_golem') P.leftArm.rotation.x += s * 1.2; }
       if (this.mobType === 'enderman' && this.angry > 0 && head) { /* mâchoire ouverte */ if (P.jaw) P.jaw.position.y = -1.5; }
     }
     if (P.leg1) {
@@ -828,11 +828,11 @@ export class PlayerModel {
     const sw = Math.cos(p.limbSwing * 0.6662) * 1.4 * p.limbAmp;
     P.rightLeg.rotation.x = sw; P.leftLeg.rotation.x = -sw;
     P.rightArm.rotation.x = -sw * 0.8; P.leftArm.rotation.x = sw * 0.8;
-    P.head.rotation.x = -p.pitch;
-    if (p.sneaking) { P.body.rotation.x = 0.5; P.head.position.z = 0; P.rightLeg.position.z = 4; P.leftLeg.position.z = 4; }
+    P.head.rotation.x = p.pitch;
+    if (p.sneaking) { P.body.rotation.x = -0.5; P.head.position.z = 0; P.rightLeg.position.z = 4; P.leftLeg.position.z = 4; }
     else { P.body.rotation.x = 0; P.rightLeg.position.z = 0; P.leftLeg.position.z = 0; }
     const hs = this.game.hand.swingT;
-    if (hs < 1) P.rightArm.rotation.x -= Math.sin(hs * Math.PI) * 1.4;
+    if (hs < 1) P.rightArm.rotation.x += Math.sin(hs * Math.PI) * 1.4;
     if (p.gliding) { this.root.rotation.x = -Math.PI / 2 + p.pitch * 0.5; } else this.root.rotation.x = 0;
     if (p.sleeping) { this.root.rotation.x = -Math.PI / 2; this.root.position.y += 0.2; }
     const id = p.held ? p.held.id : -1;

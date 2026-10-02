@@ -192,7 +192,7 @@ export function meshSection(inp) {
         } else if (shape === 4) fluid(pi, x, y, z, id, def, m, tr, tg, tb);
         if (B_WATERLOGGED[id]) {
           const wc = z * 16 + x;
-          fluid(pi, x, y, z, 1, BLOCKS[BLOCK_WATER], 0, water[wc * 3], water[wc * 3 + 1], water[wc * 3 + 2]);
+          fluid(pi, x, y, z, BLOCK_WATER, BLOCKS[BLOCK_WATER], 0, water[wc * 3], water[wc * 3 + 1], water[wc * 3 + 2]);
         }
       }
     }

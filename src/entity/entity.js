@@ -78,8 +78,10 @@ export class Entity {
       return;
     }
     if (this.inWater && !this.flying) {
+      // comme Minecraft : 0,02 de poussée ; la nage rapide réduit seulement la traînée
+      // (≈ 1,6 m/s en marchant dans l'eau, ≈ 5 m/s en nageant)
       let acc = 0.02;
-      if (this.swimming) acc = 0.04 + speed * 0.3;
+      if (this.swimming) acc = 0.028 * Math.min(1.5, speed / 0.13);
       this.moveRelative(strafe, forward, acc);
       this.applyMove();
       const drag = this.swimming ? 0.9 : 0.8;

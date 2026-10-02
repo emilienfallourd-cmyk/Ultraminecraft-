@@ -382,3 +382,5 @@ export function itemSpritePixels(id) {
   return itemSprite(def).p;
 }
 export function setTileNames(names) { TILE_NAMES_REF = names; }
+// tuile de bloc teintée sur un canvas (objet plat tenu en main : fleurs, torches…)
+export function tileSpriteCanvas(name, tint) { return tileCanvas(name, tint, 1); }

@@ -82,6 +82,7 @@ export function buildModel(spec, opts = {}) {
     const pv = p.pivot || [0, 0, 0];
     const parentPv = p.parent ? spec.parts.find((q) => q.name === p.parent).pivot || [0, 0, 0] : [0, 0, 0];
     g.position.set(pv[0] - parentPv[0], pv[1] - parentPv[1], pv[2] - parentPv[2]);
+    g.rotation.order = 'ZYX'; // même ordre que les modèles de Minecraft
     if (p.rot) g.rotation.set(p.rot[0], p.rot[1], p.rot[2]);
     g.userData.baseRot = g.rotation.clone();
     if (p.boxes && p.boxes.length) {

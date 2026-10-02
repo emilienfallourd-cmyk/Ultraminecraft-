@@ -604,7 +604,7 @@ class Warden extends Entity {
     const sw = Math.cos(this.limbSwing * 0.45) * 1.0 * this.limbAmp;
     P.rightLeg.rotation.x = sw; P.leftLeg.rotation.x = -sw;
     P.rightArm.rotation.x = -sw * 0.8; P.leftArm.rotation.x = sw * 0.8;
-    if (this.swing !== undefined && this.swing < 8) { const s = Math.sin(this.swing / 8 * Math.PI); P.rightArm.rotation.x -= s * 1.6; P.leftArm.rotation.x -= s * 1.6; }
+    if (this.swing !== undefined && this.swing < 8) { const s = Math.sin(this.swing / 8 * Math.PI); P.rightArm.rotation.x += s * 1.6; P.leftArm.rotation.x += s * 1.6; }
     if (this.charge > 0) { P.head.rotation.x = -0.4; P.rightArm.rotation.x = -0.3; P.leftArm.rotation.x = -0.3; }
     const vib = Math.sin(t * (this.anger.size ? 1.2 : 0.4)) * 0.25;
     P.tendrilR.rotation.z = -0.3 + vib; P.tendrilL.rotation.z = 0.3 - vib;
