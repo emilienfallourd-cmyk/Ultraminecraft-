@@ -1,0 +1,13 @@
+<!doctype html><html><body style="background:#8b8b8b;margin:0">
+<div id="g" style="display:flex;flex-wrap:wrap;gap:2px;width:1200px"></div>
+<script type="module">
+import { buildTiles } from '../src/gfx/textures.js';
+import { itemIcon } from '../src/gfx/icons.js';
+import { ITEMS } from '../src/items/items.js';
+buildTiles();
+const g = document.getElementById('g');
+let n = 0;
+const t0 = performance.now();
+for (const d of ITEMS) { if (!d) continue; const im = document.createElement('img'); im.src = itemIcon(d.id); im.width = 40; im.height = 40; im.title = d.name; im.style.imageRendering = 'pixelated'; g.appendChild(im); n++; }
+window.__info = { n, ms: performance.now() - t0 };
+</script></body></html>

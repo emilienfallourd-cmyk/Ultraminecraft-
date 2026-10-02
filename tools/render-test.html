@@ -1,0 +1,51 @@
+<!doctype html><html><head><meta charset="utf-8">
+<script type="importmap">{ "imports": { "three": "../lib/three.module.min.js" } }</script>
+<style>html,body{margin:0;background:#000;overflow:hidden}</style></head><body>
+<canvas id="c"></canvas>
+<script type="module">
+import * as THREE from 'three';
+import { Pipeline } from '../src/gfx/pipeline.js';
+import { World } from '../src/world/world.js';
+import { GenManager } from '../src/world/genManager.js';
+import { decorateOverworld } from '../src/world/gen/features.js';
+import { computeEnvironment } from '../src/gfx/environment.js';
+const q = new URLSearchParams(location.search);
+const seed = +(q.get('seed') || 12345);
+const time = +(q.get('time') || 2000);
+const settings = { renderScale: 1, shadows: 1, ssr: true, volumetric: true, bloom: true };
+const P = new Pipeline(document.getElementById('c'), settings);
+const gm = new GenManager(0, seed);
+const world = new World({ dim: 0, seed, generator: gm,
+  sink: (c, sy, res) => { const sec = c.sections[sy]; P.setSection(sec, res, c.cx * 16, sy * 16, c.cz * 16); },
+  unsink: (c) => { for (const s of c.sections) P.clearSection(s); },
+  decorate: (w, c) => decorateOverworld(w, c, gm.local) });
+const sp = gm.local.findSpawn();
+const px = +(q.get('x') || sp[0]), pz = +(q.get('z') || sp[2]);
+const R = +(q.get('r') || 6);
+world.setCenter(Math.floor(px) >> 4, Math.floor(pz) >> 4, R);
+const cam = P.camera;
+const env = {};
+let t0 = performance.now();
+window.__info = { spawn: sp }; window.world = world; window.P = P;
+function frame() {
+  const now = performance.now();
+  world.update(30);
+  const h = world.getSurfaceY(Math.floor(px), Math.floor(pz));
+  cam.position.set(px, Math.max(h, 62) + +(q.get('h') || 12), pz);
+  const yaw = +(q.get('yaw') || 0.6), pitch = +(q.get('pitch') || -0.25);
+  cam.rotation.order = 'YXZ'; cam.rotation.set(pitch, yaw, 0);
+  computeEnvironment(time, 0, 0, 0, 0, env);
+  P.U.uSunDir.value.set(...env.lightDir).normalize();
+  P.U.uSunColor.value.set(...env.sunColor);
+  P.U.uSkyAmbient.value.set(...env.ambient);
+  P.skyU.uSun.value.set(...env.sun); P.skyU.uMoon.value.set(...env.moon); P.skyU.uStars.value = env.stars;
+  P.lutU.uSun.value.set(...env.sun); P.lutU.uMoon.value.set(...env.moon);
+  P.U.uTime.value = (now - t0) / 1000;
+  P.compU.uFogDist.value = R * 16;
+  cam.far = R * 16 + 200; cam.updateProjectionMatrix();
+  P.render({ dim: 0, shadowLight: true, shadowCenter: cam.position.clone(), showHand: false });
+  window.__info.chunks = world.chunks.size; window.__info.stats = world.stats; window.__info.dirty = world.dirty.size;
+  requestAnimationFrame(frame);
+}
+frame();
+</script></body></html>

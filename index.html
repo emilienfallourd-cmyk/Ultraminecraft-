@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1b1b1b">
+<title>UltraMinecraft</title>
+<meta name="description" content="Un Minecraft réaliste en Three.js : rendu PBR, ombres, eau à réflexions par lancer de rayons, rayons volumétriques, trois dimensions, créatures et boss.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">{ "imports": { "three": "./lib/three.module.min.js" } }</script>
+</head>
+<body>
+<div id="app">
+  <canvas id="game"></canvas>
+
+  <!-- ATH (affichage tête haute) -->
+  <div id="hud" class="hidden">
+    <div id="bossbars"></div>
+    <div id="crosshair"></div>
+    <div id="title"><div id="titleMain"></div><div id="titleSub"></div></div>
+    <div id="chatlog"></div>
+    <div id="actionbar"></div>
+    <div id="bottom">
+      <div id="stats">
+        <div id="leftStats"><div id="armor" class="row"></div><div id="hearts" class="row"></div></div>
+        <div id="rightStats"><div id="air" class="row rtl"></div><div id="food" class="row rtl"></div></div>
+      </div>
+      <div id="xpbar"><div id="xpfill"></div><div id="xplevel"></div></div>
+      <div id="hotbar"></div>
+    </div>
+    <div id="debug" class="hidden"></div>
+    <div id="toasts"></div>
+  </div>
+
+  <!-- écrans d'inventaire -->
+  <div id="screen" class="hidden">
+    <div id="screenPanel" class="panel"></div>
+    <div id="cursorItem" class="slot floating"></div>
+    <div id="tooltip" class="hidden"></div>
+  </div>
+
+  <!-- discussion / commandes -->
+  <div id="chat" class="hidden"><input id="chatInput" type="text" autocomplete="off" spellcheck="false" maxlength="256"></div>
+
+  <!-- menus -->
+  <div id="menu"></div>
+
+  <!-- chargement -->
+  <div id="loading" class="hidden"><div class="ltext">Génération du terrain…</div><div class="lbar"><div class="lfill"></div></div><div class="ltip"></div></div>
+
+  <!-- commandes tactiles -->
+  <div id="touch">
+    <div id="tStick"><div id="tKnob"></div></div>
+    <div class="tbtn" id="tJump">⬆</div>
+    <div class="tbtn" id="tSneak">⬇</div>
+    <div class="tbtn" id="tAttack">⛏</div>
+    <div class="tbtn" id="tUse">✋</div>
+    <div class="tbtn small" id="tInv">🎒</div>
+    <div class="tbtn small" id="tPause">⏸</div>
+    <div class="tbtn small" id="tDrop">Q</div>
+    <div class="tbtn small" id="tChat">💬</div>
+    <div class="tbtn small" id="tView">👁</div>
+  </div>
+
+  <noscript><div class="nojs">UltraMinecraft nécessite JavaScript et WebGL 2.</div></noscript>
+</div>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

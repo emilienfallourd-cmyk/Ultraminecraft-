@@ -1,0 +1,21 @@
+<!doctype html><html><body style="background:#222;margin:0">
+<canvas id="c"></canvas>
+<script type="module">
+import { buildTiles, TILE_NAMES, tileToImageData, S } from '../src/gfx/textures.js';
+const t0 = performance.now();
+const b = buildTiles();
+const dt = performance.now() - t0;
+const cols = 16, scale = 2;
+const c = document.getElementById('c');
+const rows = Math.ceil(b.count / cols);
+c.width = cols * (S * scale + 4); c.height = rows * (S * scale + 4);
+const ctx = c.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const tmp = document.createElement('canvas'); tmp.width = S; tmp.height = S;
+const tctx = tmp.getContext('2d');
+for (let i = 0; i < b.count; i++) {
+  tctx.putImageData(tileToImageData(TILE_NAMES[i], tctx, [0.55, 0.78, 0.35]), 0, 0);
+  ctx.drawImage(tmp, (i % cols) * (S * scale + 4), Math.floor(i / cols) * (S * scale + 4), S * scale, S * scale);
+}
+window.__info = { count: b.count, ms: dt };
+</script></body></html>
