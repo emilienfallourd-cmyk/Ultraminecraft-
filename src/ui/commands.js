@@ -122,7 +122,7 @@ export function runCommand(game, line) {
       const gen = game.gen.local;
       if ((t === 'village' || t === 'ancient_city' || t === 'cite_antique') && game.dim === 0) {
         const plans = [];
-        const R = t === 'village' ? 400 : 512;
+        const R = t === 'village' ? 320 : 512;
         const rx0 = Math.floor(p.x / R), rz0 = Math.floor(p.z / R);
         for (let r = 0; r <= 4; r++) for (let rx = rx0 - r; rx <= rx0 + r; rx++) for (let rz = rz0 - r; rz <= rz0 + r; rz++) {
           let plan = null;
@@ -143,11 +143,23 @@ export function runCommand(game, line) {
         return best ? OK(`Structure : ${best[0]} ~ ${best[1]} (${Math.round(best[2])} blocs)`) : ERR('Aucune trouvée');
       }
       if (t === 'end_city' && game.dim === 2) return OK('Les cités de l\'End se trouvent sur les îles extérieures (à plus de 850 blocs du centre).');
-      return ERR('Usage : /locate village|stronghold|ancient_city (surface), fortress|bastion (Nether)');
+      const extra = { outpost: [_outpostPlan, 320, 'Avant-poste de pillards'], avant_poste: [_outpostPlan, 320, 'Avant-poste de pillards'], temple: [_jungleTemplePlan, 256, 'Temple de la jungle'], jungle_temple: [_jungleTemplePlan, 256, 'Temple de la jungle'], mineshaft: [_mineshaftPlan, 160, 'Mine abandonnée'], mine: [_mineshaftPlan, 160, 'Mine abandonnée'], monument: [_monumentPlan, 512, 'Monument océanique'] }[t];
+      if (extra && game.dim === 0) {
+        const [fn, R, label] = extra;
+        let best = null;
+        const rx0 = Math.floor(p.x / R), rz0 = Math.floor(p.z / R), span = R >= 500 ? 4 : 6;
+        for (let rx = rx0 - span; rx <= rx0 + span; rx++) for (let rz = rz0 - span; rz <= rz0 + span; rz++) {
+          const plan = fn(gen, rx, rz);
+          if (plan) { const d = Math.hypot(plan.x - p.x, plan.z - p.z); if (!best || d < best[2]) best = [plan.x, plan.z, d, plan.y]; }
+        }
+        if (!best) return ERR('Aucune structure trouvée à proximité');
+        return OK(`${label} le plus proche : ${best[0]} ~ ${best[1]} (${Math.round(best[2])} blocs)`);
+      }
+      return ERR('Usage : /locate village|stronghold|ancient_city|outpost|temple|mineshaft|monument (surface), fortress|bastion (Nether)');
     }
     default: return ERR('Commande inconnue. Tapez /help');
   }
 }
 
-import { _villagePlan as villagePlanPublic, _ancientPlan as ancientPlanPublic, _fortressPlan as fortressPlanPublic } from '../world/gen/structures.js';
+import { _villagePlan as villagePlanPublic, _ancientPlan as ancientPlanPublic, _fortressPlan as fortressPlanPublic, _outpostPlan, _jungleTemplePlan, _mineshaftPlan, _monumentPlan } from '../world/gen/structures.js';
 export { strongholdPositions };

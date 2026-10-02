@@ -5,6 +5,7 @@ import { RNG, hash2 } from '../../util/noise.js';
 import { BLOCK as K, BLOCKS, B_SOLID } from '../../blocks/blocks.js';
 import { BIOME as BI } from '../biomes.js';
 import { lootChest } from './loot.js';
+import { inSurfaceStructure } from './structures.js';
 
 const REPLACEABLE = new Set([0, K.short_grass, K.fern, K.tall_grass, K.tall_grass_top, K.large_fern, K.large_fern_top, K.snow, K.dead_bush, K.vine, K.pink_petals]);
 const isLeaf = (id) => BLOCKS[id] && BLOCKS[id].key.endsWith('_leaves');
@@ -293,6 +294,29 @@ function witchHut(w, x, y, z) {
   for (let dz = -1; dz <= 7; dz++) { w.set(x - 1, y + 5, z + dz, K.spruce_stairs, 3); w.set(x + 5, y + 5, z + dz, K.spruce_stairs, 1); w.set(x + 2, y + 6, z + dz, K.oak_slab); w.set(x + 1, y + 6, z + dz, K.spruce_stairs, 3); w.set(x + 3, y + 6, z + dz, K.spruce_stairs, 1); }
   w.set(x + 2, y + 2, z, 0); w.set(x + 2, y + 3, z, 0);
   w.set(x + 3, y + 2, z + 5, K.cauldron); w.set(x + 1, y + 2, z + 5, K.crafting_table);
+  w.set(x + 1, y + 2, z + 1, K.brown_mushroom ?? 0);
+  w.w.setBlockEntity(x + 2, y + 2, z + 3, { type: 'spawnMarker', mob: 'witch' });
+  w.w.setBlockEntity(x + 2, y + 2, z + 4, { type: 'spawnMarker', mob: 'cat' });
+}
+
+// ruines sous-marines (pierre en eaux froides, grès en eaux chaudes)
+function oceanRuin(w, x, y, z, rng, warm) {
+  const big = rng.next() < 0.3, R = big ? 6 : 3, H = big ? 5 : 3;
+  const mats = warm ? [K.sandstone, K.cut_sandstone, K.chiseled_sandstone, K.sandstone] : [K.stone_bricks, K.mossy_stone_bricks, K.cracked_stone_bricks, K.cobblestone, K.mossy_cobblestone];
+  const mat = () => mats[Math.floor(rng.next() * mats.length)];
+  for (let dx = -R; dx <= R; dx++) for (let dz = -R; dz <= R; dz++) {
+    w.set(x + dx, y - 1, z + dz, rng.next() < 0.75 ? mat() : (warm ? K.sand : K.gravel));
+    const edge = Math.abs(dx) === R || Math.abs(dz) === R;
+    for (let dy = 0; dy < H; dy++) {
+      const keep = edge ? rng.next() < 0.8 - dy * 0.18 : (big && (dx === 0 || dz === 0) && rng.next() < 0.5 - dy * 0.15);
+      w.set(x + dx, y + dy, z + dz, keep ? mat() : K.water);
+    }
+  }
+  if (big) for (let dx = -R; dx <= R; dx++) for (let dz = -R; dz <= R; dz++) if (rng.next() < 0.35) w.set(x + dx, y + H, z + dz, mat());
+  w.set(x + 1, y, z + 1, K.chest, 0);
+  w.w.setBlockEntity(x + 1, y, z + 1, { type: 'chest', items: lootChest('ocean_ruin', rng) });
+  w.w.setBlockEntity(x - 1, y, z, { type: 'spawnMarker', mob: 'drowned' });
+  if (big) w.w.setBlockEntity(x + 2, y, z - 2, { type: 'spawnMarker', mob: 'drowned' });
 }
 
 function desertPyramid(w, x, y, z, rng) {
@@ -393,6 +417,7 @@ export function decorateOverworld(world, chunk, gen) {
     if (b === BI.ice_spikes) { if (ground === K.snow_block || ground === K.snowy_grass_block) iceSpike(w, x, y + 1, z, rng); continue; }
     if (!SOIL.has(ground)) continue;
     if (!w.free(x, y + 1, z)) continue;
+    if (gen && inSurfaceStructure(gen, x, z)) continue;
     const ty = y + 1;
     const r = rng.next();
     switch (b) {
@@ -451,6 +476,11 @@ export function decorateOverworld(world, chunk, gen) {
     let y = SEA_LEVEL;
     while (y > 5 && world.getBlock(x, y, z) === K.water) y--;
     if (y < SEA_LEVEL - 5) shipwreck(w, x, y + 1, z, rng);
+  } else if ((bio === BI.ocean || bio === BI.cold_ocean || bio === BI.lukewarm_ocean || bio === BI.warm_ocean || bio === BI.deep_ocean || bio === BI.frozen_ocean) && s2 > 0.975) {
+    const x = bx + 8, z = bz + 8;
+    let y = SEA_LEVEL;
+    while (y > 5 && world.getBlock(x, y, z) === K.water) y--;
+    if (y < SEA_LEVEL - 4) oceanRuin(w, x, y + 1, z, rng, bio === BI.warm_ocean || bio === BI.lukewarm_ocean);
   }
   if (rng.next() < 0.01 && (bio === BI.desert || bio === BI.swamp)) {
     const x = bx + 5, z = bz + 5, y = 30 + rng.int(20);

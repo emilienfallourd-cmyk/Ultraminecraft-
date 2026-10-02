@@ -96,6 +96,9 @@ export const MODELS = {
     const el = box([0, 0, 13], [16, 16, 16], [t, t, 'oak_planks', 'oak_planks', t, t], { noCull: true });
     return { els: [el], rotY: (facingRot(meta) + (open ? 90 : 0)) % 360 };
   },
+  rail(meta) {
+    return { els: [plane([0, 1, 0], [16, 1, 16], 'rail')], rotY: (meta & 1) ? 90 : 0 };
+  },
   ladder(meta) {
     return { els: [plane([0, 0, 15.2], [16, 16, 15.2], 'ladder')], rotY: facingRot(meta) };
   },
@@ -380,6 +383,7 @@ export const BOXES = {
   lantern: () => [[5 / 16, 0, 5 / 16, 11 / 16, 9 / 16, 11 / 16]],
   bamboo: () => [[6 / 16, 0, 6 / 16, 10 / 16, 1, 10 / 16]],
   lily_pad: () => [[0, 0, 0, 1, 1.5 / 16, 1]],
+  rail: () => [[0, 0, 0, 1, 2 / 16, 1]],
   end_portal_frame: () => [[0, 0, 0, 1, 13 / 16, 1]],
   dragon_egg: () => [[1 / 16, 0, 1 / 16, 15 / 16, 1, 15 / 16]],
   end_rod: () => [[6 / 16, 0, 6 / 16, 10 / 16, 1, 10 / 16]],

@@ -130,21 +130,42 @@ class Spr {
     }
   }
   ascii(rows, pal) { rows.forEach((r, y) => [...r].forEach((ch, x) => { if (ch !== '.' && ch !== ' ' && pal[ch]) this.set(x, y, pal[ch]); })); }
-  // contour sombre + ombrage
+  // relief façon Minecraft : bords éclairés en haut à gauche, ombrés en bas à droite,
+  // léger grain, puis contour sombre teinté de la couleur voisine
   finish(outline = true) {
+    const src = this.p.slice();
+    const has = (x, y) => x >= 0 && x < G && y >= 0 && y < G && !!src[y * G + x];
+    let seed = 1;
+    for (const c of src) if (c) for (let i = 0; i < c.length; i++) seed = (seed * 31 + c.charCodeAt(i)) | 0;
+    const rnd = () => { seed = (seed * 1103515245 + 12345) | 0; return ((seed >>> 16) & 0x7fff) / 0x7fff; };
+    for (let y = 0; y < G; y++) for (let x = 0; x < G; x++) {
+      const c = src[y * G + x];
+      if (!c || c.length !== 7) continue;
+      let f = 1;
+      const tl = !has(x - 1, y) || !has(x, y - 1), br = !has(x + 1, y) || !has(x, y + 1);
+      if (tl && !br) f = 1.16; else if (br && !tl) f = 0.8;
+      else if (!has(x - 1, y - 1)) f = 1.07; else if (!has(x + 1, y + 1)) f = 0.9;
+      f *= 0.96 + rnd() * 0.08;
+      this.p[y * G + x] = sh(c, f);
+    }
     if (outline) {
       const add = [];
       for (let y = 0; y < G; y++) for (let x = 0; x < G; x++) {
-        if (this.get(x, y)) continue;
-        let n = false;
-        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (this.get(x + dx, y + dy) && !this.get(x + dx, y + dy).noOutline) n = true;
-        if (n) add.push([x, y]);
+        if (src[y * G + x]) continue;
+        let nb = null;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const n = has(x + dx, y + dy) ? src[(y + dy) * G + x + dx] : null; if (n && !n.noOutline) { nb = n; break; } }
+        if (nb) add.push([x, y, nb]);
       }
-      for (const [x, y] of add) this.p[y * G + x] = '#1a1a1a';
+      for (const [x, y, nb] of add) this.p[y * G + x] = nb.length === 7 ? mixHex(sh(nb, 0.3), '#141414', 0.5) : '#1a1a1a';
     }
     return this;
   }
 }
+const mixHex = (a, b, t) => {
+  const A = parseInt(a.slice(1), 16), B = parseInt(b.slice(1), 16);
+  const m = (s) => Math.round(((A >> s) & 255) * (1 - t) + ((B >> s) & 255) * t);
+  return '#' + ((1 << 24) | (m(16) << 16) | (m(8) << 8) | m(0)).toString(16).slice(1);
+};
 const sh = (hex, f) => {
   const v = parseInt(hex.slice(1), 16);
   const r = Math.min(255, Math.round(((v >> 16) & 255) * f)), g = Math.min(255, Math.round(((v >> 8) & 255) * f)), b = Math.min(255, Math.round((v & 255) * f));
@@ -220,7 +241,18 @@ function itemSprite(def) {
   }
   if (def.use === 'spawn_egg') {
     const [a, b] = def.colors;
-    s.ellipse(8, 8.5, 4.6, 6.2, (d, x, y) => ((x * 7 + y * 13) % 11 < 3 ? b : d > 0.75 ? sh(a, 0.75) : x < 7 && y < 7 ? sh(a, 1.2) : a));
+    // œuf (plus étroit en haut) avec taches de la seconde couleur
+    let h = 7; for (const ch of def.key) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    const r = () => { h = (h * 1664525 + 1013904223) >>> 0; return h / 4294967296; };
+    const spots = []; for (let i = 0; i < 6; i++) spots.push([4 + r() * 8, 3.5 + r() * 10, 0.7 + r() * 0.9]);
+    for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+      const ny = (y + 0.5 - 9) / 6.4, w = 4.9 * (ny < 0 ? 1 + ny * 0.28 : 1);
+      const d = Math.hypot((x + 0.5 - 8) / w, ny);
+      if (d > 1) continue;
+      const spot = spots.some(([sx, sy, sr]) => Math.hypot(x + 0.5 - sx, y + 0.5 - sy) < sr);
+      s.set(x, y, spot ? b : a);
+    }
+    s.set(6, 4, sh(a, 1.45)); s.set(5, 5, sh(a, 1.3));
     return s.finish();
   }
   const paint = SPRITES[k] || SPRITES[genericKind(k)];

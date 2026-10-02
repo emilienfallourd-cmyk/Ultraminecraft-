@@ -28,6 +28,14 @@ const TABLES = {
     ['diamond_sword', 1, 1, 3], ['diamond_chestplate', 1, 1, 3], ['diamond_pickaxe', 1, 1, 3], ['iron_sword', 1, 1, 3]],
 };
 
+Object.assign(TABLES, {
+  village_smith: [['iron_ingot', 1, 5, 10], ['bread', 1, 3, 15], ['iron_pickaxe', 1, 1, 5], ['iron_sword', 1, 1, 5], ['iron_chestplate', 1, 1, 5], ['iron_helmet', 1, 1, 5], ['obsidian', 3, 7, 5], ['oak_sapling', 3, 7, 5], ['gold_ingot', 1, 3, 5], ['diamond', 1, 3, 3], ['apple', 1, 3, 15]],
+  pillager_outpost: [['crossbow', 1, 1, 6], ['wheat', 3, 5, 7], ['potato', 2, 5, 5], ['carrot', 3, 5, 5], ['dark_oak_log', 2, 3, 10], ['experience_bottle', 1, 1, 7], ['string', 1, 6, 4], ['arrow', 2, 7, 4], ['iron_ingot', 1, 3, 3], ['emerald', 1, 2, 4]],
+  jungle_temple: [['diamond', 1, 3, 3], ['iron_ingot', 1, 5, 10], ['gold_ingot', 2, 7, 15], ['emerald', 1, 3, 2], ['bone', 4, 6, 20], ['rotten_flesh', 3, 7, 16], ['saddle', 1, 1, 3], ['bamboo', 1, 3, 15], ['golden_apple', 1, 1, 2]],
+  mineshaft: [['golden_apple', 1, 1, 3], ['iron_ingot', 1, 5, 10], ['gold_ingot', 1, 3, 5], ['redstone', 4, 9, 5], ['lapis_lazuli', 4, 9, 5], ['diamond', 1, 2, 3], ['coal', 3, 8, 10], ['bread', 1, 3, 15], ['iron_pickaxe', 1, 1, 1], ['torch', 1, 16, 15], ['name_tag', 1, 1, 3]],
+  ocean_ruin: [['coal', 1, 4, 10], ['stone_axe', 1, 1, 2], ['rotten_flesh', 1, 1, 5], ['emerald', 1, 1, 1], ['wheat', 2, 3, 10], ['gold_nugget', 1, 3, 5], ['fishing_rod', 1, 1, 1], ['heart_of_the_sea', 1, 1, 1]],
+});
+
 export function lootChest(table, rng) {
   const t = TABLES[table] || TABLES.dungeon;
   const items = new Array(27).fill(null);

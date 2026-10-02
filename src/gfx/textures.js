@@ -752,6 +752,41 @@ P('glowstone', (t) => {
     t.set(x, y, c); t.setE(x, y, e < 1.2 ? 0.3 : 0.75 + v * 0.25); t.setH(x, y, e < 1.2 ? 0.2 : 0.7);
   });
 });
+P('prismarine', (t) => {
+  t.each((x, y) => {
+    const v = t.n(0).fbm(x, y, 3, 3), w = t.n(1).at(x, y, 5);
+    const c = mix(mix(hex('#5f9e8f'), hex('#6fb0a6'), v), hex('#8a7fb5'), clamp01((w - 0.62) * 3) * 0.6);
+    t.set(x, y, c); t.setS(x, y, 0.35); t.setH(x, y, 0.4 + v * 0.3);
+  });
+});
+P('prismarine_bricks', (t) => bricks(t, { base: '#62a796', mortar: '#3f7a6c', rows: 4, bw: 16, offset: 8, bevel: true }));
+P('dark_prismarine', (t) => {
+  t.each((x, y) => {
+    const lx = x % 16, ly = y % 16, edge = lx === 0 || ly === 0;
+    const v = t.n(0).at(x, y, 6);
+    t.set(x, y, edge ? hex('#203d33') : mix(hex('#2f5b4c'), hex('#3d7461'), v)); t.setH(x, y, edge ? 0.15 : 0.6); t.setS(x, y, 0.35);
+  });
+});
+P('sponge', (t) => {
+  t.each((x, y) => {
+    const h = t.n(0).at(x, y, 3);
+    const hole = h > 0.66;
+    t.set(x, y, hole ? hex('#8c8b2a') : mix(hex('#c9c64a'), hex('#dfdc6a'), t.r())); t.setH(x, y, hole ? 0.1 : 0.7);
+  });
+});
+P('wet_sponge', (t) => {
+  t.each((x, y) => {
+    const h = t.n(0).at(x, y, 3);
+    const hole = h > 0.66;
+    t.set(x, y, hole ? hex('#6f6b1f') : mix(hex('#a9a63a'), hex('#bab64a'), t.r())); t.setH(x, y, hole ? 0.1 : 0.7); t.setS(x, y, 0.6);
+  });
+});
+P('rail', (t) => {
+  t.clear(); t.each((x, y) => t.set(x, y, [0, 0, 0], 0));
+  for (let y = 2; y < S; y += 7) { t.rect(3, y, 28, y + 3, hex('#6b4c2a')); t.rect(3, y + 3, 28, y + 3, hex('#4a3420')); }
+  for (let y = 0; y < S; y++) { t.rect(6, y, 8, y, hex('#9a9a9a')); t.set(6, y, hex('#c8c8c8')); t.rect(23, y, 25, y, hex('#9a9a9a')); t.set(23, y, hex('#c8c8c8')); }
+  t.flatNormal = true;
+});
 P('sea_lantern', (t) => {
   t.each((x, y) => {
     const cell = (Math.floor(x / 8) + Math.floor(y / 8)) % 2;

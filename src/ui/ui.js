@@ -7,13 +7,14 @@ import { BIOMES } from '../world/biomes.js';
 import { HUD } from './hud.js';
 import { Menus } from './menus.js';
 import { runCommand } from './commands.js';
+import { playerPreview, hintIcon } from './preview.js';
 
 const $ = (s) => document.querySelector(s);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; };
 
 const CATS = [
   ['build', 'Construction'], ['deco', 'Décoration'], ['nature', 'Nature'], ['func', 'Fonctionnel'], ['redstone', 'Mécanismes'],
-  ['tools', 'Outils'], ['combat', 'Combat'], ['food', 'Nourriture'], ['materials', 'Matériaux'], ['eggs', 'Œufs'], ['search', '🔍'],
+  ['tools', 'Outils'], ['combat', 'Combat'], ['food', 'Nourriture'], ['materials', 'Matériaux'], ['eggs', 'Œufs'], ['search', 'Recherche'],
 ];
 
 export class UI {
@@ -32,7 +33,7 @@ export class UI {
     this.creativeTab = 'build';
     this.creativeSearch = '';
     this.showRecipes = false;
-    addEventListener('mousemove', (e) => { this.mouse = [e.clientX, e.clientY]; this.moveFloating(); });
+    addEventListener('mousemove', (e) => { this.mouse = [e.clientX, e.clientY]; this.moveFloating(); if (this.screen && this.screen.type === 'inventory') playerPreview().look(e.clientX, e.clientY); });
     addEventListener('touchmove', (e) => { if (e.touches[0]) { this.mouse = [e.touches[0].clientX, e.touches[0].clientY]; this.moveFloating(); } }, { passive: true });
     const ci = $('#chatInput');
     ci.addEventListener('keydown', (e) => {
@@ -254,7 +255,7 @@ export class UI {
   paintSlot(d, s, hint) {
     d.innerHTML = '';
     d.classList.toggle('armor-empty', !s && !!hint);
-    if (!s) return;
+    if (!s) { const h = hint && hintIcon(hint); if (h) { const im = el('img', 'hint'); im.src = h; im.draggable = false; d.appendChild(im); } return; }
     const img = el('img'); img.src = itemIcon(s.id); img.draggable = false; d.appendChild(img);
     if (s.count > 1) d.appendChild(el('div', 'cnt', String(s.count)));
     const dur = s.def.durability;
@@ -422,12 +423,12 @@ export class UI {
     if (s.type === 'inventory') {
       // armure + aperçu
       const arm = el('div', 'grid');
-      ['⛑', '👕', '👖', '👢'].forEach((h, i) => arm.appendChild(this.slotEl(this.armorRef(i), { hint: h })));
+      ['helmet', 'chest', 'legs', 'boots'].forEach((h, i) => arm.appendChild(this.slotEl(this.armorRef(i), { hint: h })));
       top.appendChild(arm);
       const prev = el('div', 'player-preview');
-      prev.innerHTML = `<div style="text-align:center;color:#ddd;font-size:18px">❤ ${Math.ceil(p.health)}/${p.maxHealth}<br>🍗 ${p.food}/20<br>🛡 ${p.armorPoints()}<br>⭐ niv. ${p.xpLevel}</div>`;
       top.appendChild(prev);
-      top.appendChild(this.slotEl(this.objRef(p, 'offhand'), { hint: '⛨' }));
+      top.appendChild(this.slotEl(this.objRef(p, 'offhand'), { hint: 'shield' }));
+      requestAnimationFrame(() => { if (!playerPreview().attach(prev)) prev.innerHTML = `<div style="text-align:center;color:#ddd;font-size:18px">❤ ${Math.ceil(p.health)}/${p.maxHealth}<br>niv. ${p.xpLevel}</div>`; });
     }
     const craft = el('div');
     craft.appendChild(el('h3', '', s.type === 'crafting' ? 'Artisanat' : 'Artisanat'));
@@ -438,7 +439,7 @@ export class UI {
     row.appendChild(el('div', 'arrow'));
     row.appendChild(this.slotEl(this.resultRef(s), { cls: 'result' }));
     craft.appendChild(row);
-    const rb = el('button', 'btn', this.showRecipes ? 'Masquer les recettes' : '📖 Recettes');
+    const rb = el('button', 'btn', this.showRecipes ? 'Masquer les recettes' : `<img src="${itemIcon(ITEM.book)}" class="btn-ico" alt="">Recettes`);
     rb.style.cssText = 'font-size:18px;min-height:30px;margin-top:6px;max-width:220px';
     rb.onclick = () => { this.showRecipes = !this.showRecipes; this.renderScreen(); };
     craft.appendChild(rb);
@@ -558,7 +559,7 @@ export class UI {
     const hb = el('div', 'grid'); hb.style.gridTemplateColumns = 'repeat(9, auto)';
     for (let i = 0; i < 9; i++) hb.appendChild(this.slotEl(this.invRef(i)));
     bottom.appendChild(hb);
-    bottom.appendChild(this.slotEl({ trash: true, get: () => null, set: () => {} }, { cls: 'trash', hint: '🗑' }));
+    bottom.appendChild(this.slotEl({ trash: true, get: () => null, set: () => {} }, { cls: 'trash', hint: 'trash' }));
     P.appendChild(bottom);
   }
   renderCraftScreenInto(box, s) { this.renderCraftScreen(box, s); }

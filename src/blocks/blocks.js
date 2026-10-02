@@ -345,6 +345,14 @@ B('sculk_catalyst', 'Catalyseur sculk', { tex: { top: 'sculk_catalyst_top', bott
 B('sculk_sensor', 'Capteur sculk', { shape: 'model', model: 'sculk_sensor', boxes: 'half', opaque: false, render: 'cutout', hardness: 1.5, tool: 'hoe', light: 1, sound: 'sculk', xp: 5, cat: 'redstone' });
 B('sculk_shrieker', 'Hurleur sculk', { shape: 'model', model: 'sculk_shrieker', boxes: 'half', opaque: false, render: 'cutout', hardness: 3, tool: 'hoe', sound: 'sculk', xp: 5, cat: 'redstone' });
 B('wither_skeleton_skull', 'Crâne de wither squelette', { shape: 'model', model: 'skull', boxes: 'skull', opaque: false, facing: true, hardness: 1, sound: 'stone', cat: 'deco', tex: 'wither_skull' });
+// --- ajoutés ensuite (toujours à la fin pour garder les identifiants des mondes sauvegardés)
+B('prismarine', 'Prismarine', { ...stone, hardness: 1.5, sound: 'stone' });
+B('prismarine_bricks', 'Briques de prismarine', { ...stone, hardness: 1.5 });
+B('dark_prismarine', 'Prismarine sombre', { ...stone, hardness: 1.5 });
+B('sponge', 'Éponge', { hardness: 0.6, tool: 'hoe', sound: 'grass', cat: 'deco' });
+B('wet_sponge', 'Éponge mouillée', { hardness: 0.6, tool: 'hoe', sound: 'grass', cat: 'deco' });
+B('rail', 'Rail', { shape: 'model', model: 'rail', boxes: 'rail', render: 'cutout', opaque: false, solid: false, hardness: 0.7, tool: 'pickaxe', sound: 'metal', support: 'below', cat: 'redstone' });
+B('cracked_mossy_bricks', 'Pierres taillées moussues fissurées', { ...stone, hardness: 1.5, tex: 'mossy_stone_bricks' });
 
 // Applique les modèles / collisions
 for (const b of BLOCKS) {

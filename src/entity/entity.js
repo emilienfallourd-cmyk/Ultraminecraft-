@@ -55,7 +55,10 @@ export class Entity {
     this.inWater = fs.water; this.inLava = fs.lava; this.eyeInWater = fs.eyeWater; this.eyeInLava = fs.eyeLava;
     this.waterTop = fs.waterTop;
     if (this.inWater) { this.fallDistance = 0; if (this.fire > 0) this.fire = 0; }
-    if (!wasIn && this.inWater && this.vy < -0.3 && this.game.particles) this.game.particles.splash(this.x, this.waterTop, this.z, Math.min(1, -this.vy));
+    if (!wasIn && this.inWater && this.vy < -0.3 && this.game.particles) {
+      this.game.particles.splash(this.x, this.waterTop, this.z, Math.min(1, -this.vy));
+      if (this.game.audio && this.game.audio.splash) this.game.audio.splash(this.x, this.waterTop, this.z, Math.min(1, -this.vy * 1.5));
+    }
     this.inCobweb = false; this.climbing = false; this.inPortal = null; this.inFire = false; this.speedMul = 1;
     blocksInside(this.world, this, (def, x, y, z) => {
       if (def.key === 'cobweb') this.inCobweb = true;

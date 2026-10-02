@@ -35,6 +35,42 @@ function makeIcons() {
   ICONS.armorHalf = pix(ARMOR.map((r) => [...r].map((c, i) => (i > 4 && c !== 'X' && c !== '.' ? 'E' : c)).join('')), { X: K, A: '#d8d8d8', W: '#fff', E: '#3a3a3a' });
   ICONS.armorEmpty = pix(ARMOR, { X: K, A: '#3a3a3a', W: '#3a3a3a' });
   ICONS.bubble = pix(BUBBLE, { X: '#1a3a7a', B: '#5a9aff', W: '#e0f0ff' });
+  // barre d'action, cadre de sélection et barre d'expérience en pixel art (1 px = 1 pixel Minecraft)
+  ICONS.hotbar = canvasURL(182, 22, (px) => {
+    px(0, 0, 182, 22, 'rgba(0,0,0,0.8)');
+    px(1, 1, 180, 20, 'rgba(24,24,24,0.6)');
+    for (let i = 0; i < 9; i++) {
+      const X = 1 + i * 20;
+      px(X + 1, 2, 18, 18, 'rgba(128,128,128,0.36)');
+      px(X + 1, 2, 18, 1, 'rgba(20,20,20,0.75)'); px(X + 1, 2, 1, 18, 'rgba(20,20,20,0.75)');
+      px(X + 1, 19, 18, 1, 'rgba(210,210,210,0.32)'); px(X + 18, 3, 1, 17, 'rgba(210,210,210,0.32)');
+    }
+    px(1, 1, 180, 1, 'rgba(160,160,160,0.45)');
+  });
+  ICONS.sel = canvasURL(24, 24, (px, x) => {
+    px(0, 0, 24, 24, '#000');
+    px(1, 1, 22, 22, '#d8d8d8');
+    px(1, 1, 22, 1, '#ffffff'); px(1, 1, 1, 22, '#ffffff');
+    px(1, 22, 22, 1, '#9a9a9a'); px(22, 1, 1, 22, '#9a9a9a');
+    px(3, 3, 18, 18, 'rgba(0,0,0,0.85)');
+    x.clearRect(4, 4, 16, 16);
+    px(4, 4, 16, 16, 'rgba(255,255,255,0.08)');
+  });
+  ICONS.xpBg = canvasURL(182, 5, (px) => {
+    px(0, 0, 182, 5, '#000');
+    px(1, 1, 180, 3, '#1c2a10');
+    for (let i = 1; i < 18; i++) px(1 + Math.round(i * 180 / 18), 1, 1, 3, '#000');
+  });
+  ICONS.xpFill = canvasURL(182, 5, (px) => {
+    px(1, 1, 180, 1, '#c8ff8a'); px(1, 2, 180, 1, '#80ff20'); px(1, 3, 180, 1, '#4cbf12');
+    for (let i = 1; i < 18; i++) px(1 + Math.round(i * 180 / 18), 1, 1, 3, 'rgba(0,0,0,0.55)');
+  });
+}
+function canvasURL(w, h, draw) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d');
+  draw((X, Y, W, H, col) => { x.fillStyle = col; x.fillRect(X, Y, W, H); }, x);
+  return c.toDataURL();
 }
 
 export class HUD {
@@ -51,10 +87,19 @@ export class HUD {
   build() {
     const hb = $('#hotbar');
     hb.innerHTML = '';
+    hb.style.backgroundImage = `url(${ICONS.hotbar})`;
+    const root = document.documentElement.style;
+    root.setProperty('--xp-bg', `url(${ICONS.xpBg})`);
+    root.setProperty('--xp-fill', `url(${ICONS.xpFill})`);
+    this.selEl = document.createElement('div');
+    this.selEl.id = 'hbsel';
+    this.selEl.style.backgroundImage = `url(${ICONS.sel})`;
+    hb.appendChild(this.selEl);
     this.slots = [];
     for (let i = 0; i < 9; i++) {
       const d = document.createElement('div');
       d.className = 'slot';
+      d.style.setProperty('--i', i);
       d.style.pointerEvents = 'auto';
       d.addEventListener('touchstart', (e) => { e.preventDefault(); this.game.player.selected = i; this.ui.onHotbarChange(); }, { passive: false });
       hb.appendChild(d);
@@ -73,6 +118,7 @@ export class HUD {
         const s = p.inventory[i];
         const d = this.slots[i];
         d.classList.toggle('sel', i === p.selected);
+        if (i === p.selected) this.selEl.style.setProperty('--i', i);
         const key = s ? s.id + ':' + s.count + ':' + s.damage : '';
         if (d.dataset.k !== key) { d.dataset.k = key; this.ui.paintSlot(d, s); }
       }
