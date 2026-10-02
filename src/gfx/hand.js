@@ -87,7 +87,7 @@ export class Hand {
         const m = new THREE.Mesh(blockGeometry(def.block), this.arrayMat);
         const b = BLOCKS[def.block];
         if (b.tint) this.arrayMat.uniforms.uTint.value.set(0.22, 0.55, 0.1); else this.arrayMat.uniforms.uTint.value.set(1, 1, 1);
-        m.scale.setScalar(0.4);
+        m.scale.setScalar(0.34);
         m.rotation.set(0.1, Math.PI / 4, 0);
         g.add(m);
         g.userData.kind = 'block';
@@ -113,7 +113,7 @@ export class Hand {
           mesh = new THREE.Mesh(geo, this.arrayMat);
           if (b.tint) this.arrayMat.uniforms.uTint.value.set(0.22, 0.55, 0.1);
         }
-        mesh.scale.setScalar(0.62);
+        mesh.scale.setScalar(0.46);
         g.add(mesh);
         g.userData.kind = 'item';
         g.userData.tool = !!def.tool || def.key === 'stick' || def.key === 'bow' || def.key === 'blaze_rod' || def.key === 'fishing_rod';
@@ -192,7 +192,7 @@ export class Hand {
       r.position.set(0.5 - sqP * 0.25 + bx * 0.6, -0.48 + by * 0.6 - eq * 0.6 + Math.sin(Math.sqrt(sp) * Math.PI * 2) * 0.1, -0.78 - sinP * 0.2);
       r.rotation.set(-sinP * 0.6, -sqP * 0.3, sinP * 0.2);
     } else {
-      r.position.set(0.52 - sqP * 0.25 + bx * 0.6, -0.42 + by * 0.6 - eq * 0.6 + Math.sin(Math.sqrt(sp) * Math.PI * 2) * 0.1, -0.72 - sinP * 0.2);
+      r.position.set(0.52 - sqP * 0.25 + bx * 0.6, -0.4 + by * 0.6 - eq * 0.6 + Math.sin(Math.sqrt(sp) * Math.PI * 2) * 0.1, -0.8 - sinP * 0.2);
       r.rotation.set(-sinP * 1.1, -sqP * 0.3, sinP * 0.3);
       if (c.userData.tool) { c.rotation.set(0, -Math.PI / 2 + 0.35, 0.65); c.position.set(0.05, 0.12, 0); }
       else { c.rotation.set(0, -0.5, 0.05); }

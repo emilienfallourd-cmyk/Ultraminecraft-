@@ -8,9 +8,12 @@ function spawnWorkers() {
   if (sharedWorkers || workersFailed) return sharedWorkers;
   try {
     const n = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 4) - 1));
+    // version fichier unique : le worker est fourni sous forme de texte
+    const src = globalThis.UMC_WORKER_SRC;
+    const blobUrl = src ? URL.createObjectURL(new Blob([src], { type: 'text/javascript' })) : null;
     sharedWorkers = [];
     for (let i = 0; i < n; i++) {
-      const w = new Worker(new URL('./genWorker.js', import.meta.url), { type: 'module' });
+      const w = blobUrl ? new Worker(blobUrl) : new Worker(new URL('./genWorker.js', import.meta.url), { type: 'module' });
       w.busy = 0;
       w.onerror = (e) => { console.warn('Worker de génération indisponible, repli synchrone', e.message || e); workersFailed = true; };
       sharedWorkers.push(w);

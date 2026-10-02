@@ -197,10 +197,26 @@ export class Game {
     let y = Math.floor(p.y);
     const free = (yy) => !B_SOLID[w.getBlock(x, yy, z)] && !B_SOLID[w.getBlock(x, yy + 1, z)] && !BLOCKS[w.getBlock(x, yy, z)].fluid;
     if (dim === 0 && (isNew || !free(y))) {
-      y = w.getSurfaceY(x, z) + 1;
-      if (y < 1) y = 70;
-      p.setPos(x + 0.5, y, z + 0.5);
-      if (isNew) { this.meta.spawn = [x + 0.5, y, z + 0.5]; }
+      // colonne proche dont le sommet est un vrai sol (pas un arbre ni de l'eau)
+      const ground = (xx, zz) => {
+        const sy = w.getSurfaceY(xx, zz);
+        if (sy < 1) return -1;
+        const b = BLOCKS[w.getBlock(xx, sy, zz)];
+        if (b.fluid || /leaves|log|wood/.test(b.key)) return -1;
+        return sy;
+      };
+      let bx = x, bz = z, by = ground(x, z);
+      for (let r = 1; r <= 24 && by < 0; r++) {
+        for (let i = -r; i <= r && by < 0; i++) {
+          for (const [cx, cz] of [[x + i, z - r], [x + i, z + r], [x - r, z + i], [x + r, z + i]]) {
+            const gy = ground(cx, cz);
+            if (gy >= 0) { bx = cx; bz = cz; by = gy; break; }
+          }
+        }
+      }
+      y = by >= 0 ? by + 1 : Math.max(w.getSurfaceY(x, z) + 1, 70);
+      p.setPos(bx + 0.5, y, bz + 0.5);
+      if (isNew) { this.meta.spawn = [bx + 0.5, y, bz + 0.5]; }
     } else if (!free(y)) {
       for (let yy = y; yy < HEIGHT - 2; yy++) if (free(yy) && B_SOLID[w.getBlock(x, yy - 1, z)]) { p.setPos(x + 0.5, yy, z + 0.5); return; }
     }

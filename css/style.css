@@ -15,7 +15,7 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0b0d; color: var(--text); touch-action: none; -webkit-user-select: none; user-select: none; }
-#app { position: fixed; inset: 0; }
+#app { position: fixed; top: env(safe-area-inset-top, 0px); bottom: env(safe-area-inset-bottom, 0px); left: env(safe-area-inset-left, 0px); right: env(safe-area-inset-right, 0px); }
 #game { position: absolute; inset: 0; width: 100%; height: 100%; display: block; image-rendering: auto; }
 .hidden { display: none !important; }
 .mc-text { text-shadow: 2px 2px 0 var(--text-shadow); }
@@ -28,7 +28,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0b0d; col
 #crosshair::after { top: 8px; left: 0; width: 18px; height: 2px; }
 #bottom { position: absolute; left: 50%; bottom: max(6px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
 #hotbar { display: flex; background: rgba(0, 0, 0, 0.35); border: 2px solid rgba(0, 0, 0, 0.6); outline: 2px solid rgba(255, 255, 255, 0.25); padding: 2px; gap: 0; }
-#hotbar .slot { width: 44px; height: 44px; border: 2px solid transparent; background: rgba(139, 139, 139, 0.18); }
+#hotbar .slot { width: 44px; height: 44px; border: 2px solid rgba(20, 20, 20, 0.55); box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.12), inset -2px -2px 0 rgba(0, 0, 0, 0.25); background: rgba(139, 139, 139, 0.22); }
 #hotbar .slot.sel { border: 3px solid #fff; outline: 2px solid #000; z-index: 2; background: rgba(255, 255, 255, 0.12); }
 #stats { width: 412px; display: flex; justify-content: space-between; margin-bottom: 2px; }
 .row { display: flex; height: 18px; gap: 0; margin-top: 1px; }

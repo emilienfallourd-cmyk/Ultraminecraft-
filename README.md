@@ -4,10 +4,24 @@ Un clone de Minecraft en HTML + Three.js (WebGL 2), avec un rendu réaliste : om
 
 ## Lancer le jeu
 
-Le jeu utilise des modules ES : il doit être servi par un serveur HTTP (ouvrir `index.html` directement depuis le disque ne fonctionne pas).
+### Le plus simple : un seul fichier
+
+Téléchargez `dist/UltraMinecraft.html` et ouvrez-le par double-clic dans Chrome, Edge ou Firefox. Tout le jeu est dans ce fichier ; une connexion Internet sert seulement à charger la police pixel.
+
+Pour régénérer ce fichier après une modification du code :
+
+```bash
+npm i --no-save esbuild
+node tools/build-single.mjs
+```
+
+### Depuis les sources
+
+Les sources utilisent des modules ES : elles doivent être servies par un serveur HTTP (ouvrir `index.html` directement depuis le disque ne fonctionne pas).
 
 ```bash
 npx http-server -p 8080 .
+# ou : python -m http.server 8080
 # puis ouvrir http://localhost:8080
 ```
 
@@ -55,6 +69,6 @@ Commandes utiles : `/gamemode 1`, `/give diamond_sword`, `/summon zombie`, `/bos
 - `src/entity/` : physique, joueur, créatures, IA, boss.
 - `src/items/` : objets et recettes.
 - `src/ui/` : interface, menus, ATH, commandes.
-- `tools/` : pages de test du rendu, de l'atlas de textures et des icônes.
+- `tools/` : construction du fichier unique (`build-single.mjs`) et pages de test du rendu, de l'atlas de textures et des icônes.
 
 Projet de fans, non affilié à Mojang ni à Microsoft.

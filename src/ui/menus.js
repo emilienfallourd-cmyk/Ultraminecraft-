@@ -78,7 +78,14 @@ export class Menus {
     }
     this.on('wPlay', () => { const w = list.find((x) => x.id === sel); if (w) this.ui.app.playWorld(w); });
     this.on('wNew', () => this.create());
-    this.on('wDel', async () => { const w = list.find((x) => x.id === sel); if (w && confirm(`Supprimer « ${w.name} » définitivement ?`)) { await this.ui.app.store.deleteWorld(w.id); this.worlds(); } });
+    // suppression en deux temps (les boîtes de dialogue natives peuvent être bloquées)
+    let armed = null;
+    this.on('wDel', async () => {
+      const w = list.find((x) => x.id === sel), b = $('#wDel');
+      if (!w) return;
+      if (armed !== w.id) { armed = w.id; b.textContent = 'Confirmer la suppression ?'; setTimeout(() => { if (armed === w.id && b.isConnected) { armed = null; b.textContent = 'Supprimer'; } }, 4000); return; }
+      await this.ui.app.store.deleteWorld(w.id); this.worlds();
+    });
     this.on('wBack', () => this.title());
   }
 
