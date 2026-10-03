@@ -101,9 +101,30 @@ export class HUD {
       d.className = 'slot';
       d.style.setProperty('--i', i);
       d.style.pointerEvents = 'auto';
-      d.addEventListener('touchstart', (e) => { e.preventDefault(); this.game.player.selected = i; this.ui.onHotbarChange(); }, { passive: false });
+      // toucher : choisir ; appui long : jeter l'objet (comme Minecraft)
+      let hold = null;
+      const stop = () => { clearTimeout(hold); clearInterval(hold); hold = null; };
+      d.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const g = this.game;
+        g.player.selected = i; this.ui.onHotbarChange();
+        stop();
+        hold = setTimeout(() => {
+          const drop = () => { if (g.player.held && !g.player.dead) { g.interact.dropHeld(false); try { navigator.vibrate && navigator.vibrate(10); } catch (er) { /* */ } } };
+          drop(); hold = setInterval(drop, 220);
+        }, 520);
+      }, { passive: false });
+      d.addEventListener('touchend', stop); d.addEventListener('touchcancel', stop);
       hb.appendChild(d);
       this.slots.push(d);
+    }
+    // écran tactile : bouton d'inventaire au bout de la barre d'objets
+    if (this.game.input.touch) {
+      const m = document.createElement('div');
+      m.id = 'tMore';
+      m.innerHTML = '<span></span><span></span><span></span>';
+      m.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); const ui = this.ui; if (ui.screen) ui.closeScreen(); else if (!this.game.player.dead) ui.openInventory(); }, { passive: false });
+      hb.appendChild(m);
     }
     this.dirty = true;
   }

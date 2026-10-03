@@ -7,6 +7,7 @@ import { raycast, rayBox } from '../entity/physics.js';
 import { tileIndex } from '../gfx/textures.js';
 import { GAMEMODE, DAY_LENGTH } from '../constants.js';
 import { OPP6 } from '../world/redstone.js';
+import { vibrate } from '../touch.js';
 
 const DIR = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
 const FACE_TO_FACING = { 0: 3, 1: 1, 4: 0, 5: 2 }; // face horizontale -> facing
@@ -80,10 +81,13 @@ export class Interaction {
     if (inp.wasPressed('KeyF')) { const t = p.offhand; p.offhand = p.held; p.held = t; g.ui.refresh(); }
     if (inp.wasPressed('F5')) g.thirdPerson = (g.thirdPerson + 1) % 3;
     g.zoom = inp.down('KeyC');
+    // toucher : viser exactement sous le doigt avant d'agir
+    if (inp.touchAim && inp.clicks.length) this.updateTarget();
     for (const b of inp.clicks) {
       if (b === 0) this.onAttackClick();
       else if (b === 2) this.onUseClick();
       else if (b === 1) this.pickBlock();
+      else if (b === 3) this.onTouchTap();
     }
     if (inp.wasPressed('TouchAttack')) this.onAttackClick();
     if (inp.wasPressed('TouchUse')) this.onUseClick();
@@ -95,7 +99,13 @@ export class Interaction {
     if (p.dead || p.spectator || g.ui.isScreenOpen()) { this.target = null; this.targetEntity = null; this.outline.visible = false; this.crack.visible = false; return; }
     const reach = p.creative ? 5 : 4.5;
     const ex = p.x, ey = p.y + (g.eyeSmooth ?? p.eyeHeight), ez = p.z;
-    const ld = p.lookDir();
+    let ld = p.lookDir();
+    // écran tactile, visée « au doigt » (comme Minecraft) : on vise ce qui est sous le doigt
+    const inp = g.input;
+    if (inp.touch && !inp.locked && !inp.padActive && g.settings.touchAim !== 'cross') {
+      if (!inp.touchAim) { this.target = null; this.targetEntity = null; this.outline.visible = false; this.crack.visible = false; return; }
+      ld = this.screenRay(inp.touchAim.x, inp.touchAim.y);
+    }
     this.target = raycast(this.world, ex, ey, ez, ld[0], ld[1], ld[2], reach, { selection: getSelectionBoxes });
     // entités
     this.targetEntity = null;
@@ -138,6 +148,35 @@ export class Interaction {
       this.crack.position.set(m.x + 0.5, m.y + 0.5, m.z + 0.5);
       this.crack.material.uniforms.uTile.value = tileIndex('destroy_stage_' + Math.min(9, Math.floor(m.progress * 10)));
     } else this.crack.visible = false;
+  }
+
+  // direction du rayon passant par un point de l'écran
+  screenRay(x, y) {
+    const cam = this.game.pipeline.camera;
+    cam.updateMatrixWorld();
+    const v = this._ray || (this._ray = new THREE.Vector3());
+    v.set((x / innerWidth) * 2 - 1, -(y / innerHeight) * 2 + 1, 0.5).unproject(cam).sub(cam.position).normalize();
+    return [v.x, v.y, v.z];
+  }
+
+  // toucher court sur l'écran : frapper la créature visée, sinon poser / utiliser
+  onTouchTap() {
+    const p = this.player, e = this.targetEntity;
+    if (p.dead || p.spectator) return;
+    if (e) {
+      if (e.interact && e.interact(p, p.held)) { this.game.hand.swing(); this.placeCooldown = 4; return; }
+      this.onAttackClick();
+      return;
+    }
+    this.onUseClick();
+  }
+  // l'objet tenu s'utilise en maintenant (manger, arc, trident)
+  wantsHoldUse() {
+    const p = this.player, h = p.held;
+    if (!h) return false;
+    const d = h.def;
+    if (this.target && d.isBlock) return false;
+    return !!((d.food && (p.food < 20 || d.food.always || p.creative)) || d.use === 'bow' || d.use === 'trident');
   }
 
   // ------------------------------------------------------------ ATTAQUE
@@ -191,6 +230,7 @@ export class Interaction {
     if (BLOCKS[t.id].hardness < 0 && t.id !== K.end_portal_frame) return;
     this.game.breakBlock(t.x, t.y, t.z, false);
     this.game.vibration(t.x + 0.5, t.y + 0.5, t.z + 0.5, 1, this.player);
+    if (this.game.input.touch) vibrate(15);
   }
 
   tick() {
@@ -232,6 +272,7 @@ export class Interaction {
       if (held && held.def.tool && def.hardness > 0) p.damageHeld(1);
       p.addExhaustion(0.005);
       g.vibration(t.x + 0.5, t.y + 0.5, t.z + 0.5, 1, p);
+      if (g.input.touch) vibrate(15);
       this.mining = null;
       if (g.onBlockMined) g.onBlockMined(t.id);
     }

@@ -138,6 +138,9 @@ export class Menus {
         <button class="btn" id="oDyn">Résolution dynamique : ${dynN(s.dynRes)}</button>
         <button class="btn" id="oCap">Limite d'images : ${s.fpsCap ? s.fpsCap + ' i/s' : 'Aucune'}</button>
         <label class="field"><span class="flabel">Taille de l'interface : <span id="vUi">${Math.round((s.uiScale || 1) * 100)}</span> %</span><input type="range" id="oUi" min="70" max="160" step="5" value="${Math.round((s.uiScale || 1) * 100)}"></label>
+        ${touch ? `<button class="btn" id="oAim">Visée : ${s.touchAim === 'cross' ? 'viseur au centre' : 'au doigt (Minecraft)'}</button>
+        <button class="btn" id="oLookPad">Pad caméra : ${s.lookPad === false ? 'masqué' : 'affiché'}</button>
+        <label class="field"><span class="flabel">Opacité des commandes : <span id="vTo">${Math.round((s.touchOpacity ?? 0.85) * 100)}</span> %</span><input type="range" id="oTo" min="20" max="100" step="5" value="${Math.round((s.touchOpacity ?? 0.85) * 100)}"></label>` : ''}
         ${touch ? `<label class="field"><span class="flabel">Taille des commandes tactiles : <span id="vTs">${Math.round((s.touchScale || 1) * 100)}</span> %</span><input type="range" id="oTs" min="70" max="160" step="5" value="${Math.round((s.touchScale || 1) * 100)}"></label>` : ''}
         <label class="field"><span class="flabel">Distance de rendu : <span id="vRd">${s.renderDistance}</span> chunks</span><input type="range" id="oRd" min="2" max="16" value="${s.renderDistance}"></label>
         <button class="btn" id="oShadows">Ombres : ${shadowN[s.shadows]}</button>
@@ -186,7 +189,12 @@ export class Menus {
     slider('oVolm', 'vVol', (v) => { s.volume = v / 100; });
     slider('oMus', 'vMus', (v) => { s.musicVolume = v / 100; });
     slider('oUi', 'vUi', (v) => { s.uiScale = v / 100; });
-    if (touch) slider('oTs', 'vTs', (v) => { s.touchScale = v / 100; });
+    if (touch) {
+      slider('oTs', 'vTs', (v) => { s.touchScale = v / 100; });
+      slider('oTo', 'vTo', (v) => { s.touchOpacity = v / 100; });
+      this.on('oAim', () => { s.touchAim = s.touchAim === 'cross' ? 'finger' : 'cross'; re(); });
+      this.on('oLookPad', () => { s.lookPad = s.lookPad === false; re(); });
+    }
     this.on('oDone', () => { if (this.returnTo) this.returnTo(); else this.title(); });
   }
 
@@ -199,8 +207,10 @@ export class Menus {
         <kbd>Clic gauche</kbd> miner / attaquer · <kbd>Clic droit</kbd> poser / utiliser · <kbd>Clic molette</kbd> choisir le bloc visé<br>
         <kbd>1-9</kbd> / molette barre d'action · <kbd>E</kbd> inventaire · <kbd>Q</kbd> jeter · <kbd>F</kbd> main secondaire<br>
         <kbd>T</kbd> discussion · <kbd>/</kbd> commande · <kbd>F1</kbd> masquer l'ATH · <kbd>F2</kbd> capture · <kbd>F3</kbd> débogage · <kbd>F5</kbd> vue · <kbd>C</kbd> zoom · <kbd>Échap</kbd> pause<br><br>
-        <b>Tactile</b> : posez le pouce n'importe où dans la moitié gauche pour faire apparaître le joystick (à fond vers l'avant : courir, bouton » : course continue),
-        glisser à droite pour regarder, toucher pour poser/utiliser, appui long pour miner/attaquer.<br>
+        <b>Tactile</b> (comme Minecraft) : pad de gauche pour marcher (à fond vers l'avant : courir), pad de droite ou glisser sur l'écran pour regarder,
+        <b>toucher</b> pour poser / utiliser, <b>maintenir</b> pour casser / attaquer (à l'endroit touché, ou au viseur central selon l'option « Visée »).
+        Boutons : sauter (double appui : voler), s'accroupir (bascule ; en vol : descendre), pause. Inventaire : bouton ••• au bout de la barre d'objets ;
+        maintenir une case de la barre pour jeter l'objet. Discussion et changement de vue : menu pause.<br>
         <b>Manette</b> : stick gauche se déplacer · stick droit regarder · <kbd>A</kbd> sauter (double : voler) · <kbd>B</kbd> s'accroupir · <kbd>RT</kbd> miner / attaquer ·
         <kbd>LT</kbd> poser / utiliser · <kbd>LB</kbd>/<kbd>RB</kbd> barre d'action · <kbd>Y</kbd> inventaire · <kbd>X</kbd> jeter · <kbd>L3</kbd> courir · <kbd>R3</kbd> choisir le bloc visé ·
         croix ↑ vue · croix ↓ main secondaire · <kbd>Menu</kbd> pause. Dans les menus : stick gauche = curseur, croix = élément suivant, <kbd>A</kbd> clic, <kbd>X</kbd> clic droit, <kbd>B</kbd> retour, <kbd>LB</kbd>/<kbd>RB</kbd> onglets.<br>
@@ -235,12 +245,15 @@ export class Menus {
       <div class="menu-title">Menu du jeu</div>
       <button class="btn" id="pResume">Reprendre la partie</button>
       <div class="btn-row"><button class="btn" id="pOpt">Options…</button><button class="btn" id="pHelp">Commandes</button></div>
+      ${g.input.touch ? '<div class="btn-row"><button class="btn" id="pChat">Discussion</button><button class="btn" id="pView">Vue : ' + ['1re personne', '3e personne', 'face'][g.thirdPerson || 0] + '</button></div>' : ''}
       <button class="btn" id="pSave">Sauvegarder</button>
       <button class="btn" id="pQuit">Sauvegarder et quitter vers le titre</button>`, 'menu-bg dark');
     this.on('pResume', () => this.resume());
     this.on('pOpt', () => this.options());
     this.on('pHelp', () => this.help());
     this.on('pSave', async () => { await g.saveGame(); this.ui.toast('Partie sauvegardée'); });
+    this.on('pChat', () => { this.resume(); this.ui.openChat(''); });
+    this.on('pView', () => { g.thirdPerson = ((g.thirdPerson || 0) + 1) % 3; this.pause(); });
     this.on('pQuit', () => this.ui.app.quitToTitle());
   }
   resume() {

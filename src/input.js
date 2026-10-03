@@ -1,5 +1,6 @@
 // Entrées : clavier, souris (pointer lock), molette, commandes tactiles et manette
 import { GamepadInput } from './gamepad.js';
+import { TouchControls } from './touch.js';
 
 export class Input {
   constructor(canvas) {
@@ -18,6 +19,7 @@ export class Input {
     this.invertY = false;
     this.dragLook = false;
     this.move = { x: 0, y: 0 }; // joystick tactile
+    this.touchAim = null;       // point visé au doigt (écran tactile)
     this.virtual = new Set();   // boutons virtuels tactiles
     this.lastSpace = 0;
     this.doubleSpace = false;
@@ -106,107 +108,14 @@ export class Input {
   endFrame() {
     this.pressed.clear(); this.clicks = []; this.wheel = 0; this.mouseDX = 0; this.mouseDY = 0;
     this.doubleSpace = false; this.doubleW = false;
+    // la visée d'un toucher court reste valable jusqu'à ce que le clic soit traité
+    if (this.aimRelease) { this.aimRelease = false; this.touchAim = null; }
   }
 
   // ------------------------------------------------- CONTRÔLES TACTILES
-  setupTouch(root, handlers) {
+  setupTouch(root, opts) {
     this.touch = true;
     root.classList.add('touch');
-    const stick = root.querySelector('#tStick'), knob = root.querySelector('#tKnob');
-    let stickId = null, sx = 0, sy = 0;
-    const lookTouches = new Map();
-    const scale = () => parseFloat(getComputedStyle(root.querySelector('#touch')).getPropertyValue('--ts')) || 1;
-    const radius = () => 55 * scale();
-    // joystick flottant : il apparaît sous le pouce dans la moitié gauche de l'écran
-    this.floatStick = true;
-    const startStick = (t, float) => {
-      stickId = t.identifier;
-      if (float) {
-        const r = stick.getBoundingClientRect();
-        stick.style.left = (t.clientX - r.width / 2) + 'px'; stick.style.top = (t.clientY - r.height / 2) + 'px'; stick.style.bottom = 'auto';
-        stick.classList.add('float');
-        sx = t.clientX; sy = t.clientY;
-      } else {
-        const r = stick.getBoundingClientRect(); sx = r.left + r.width / 2; sy = r.top + r.height / 2;
-        moveStick(t);
-      }
-    };
-    const resetStick = () => {
-      stickId = null; this.move.x = 0; this.move.y = 0; knob.style.transform = '';
-      stick.style.left = stick.style.top = stick.style.bottom = ''; stick.classList.remove('float', 'sprint');
-      if (!this.sprintToggle) this.virtual.delete('Sprint');
-    };
-    stick.addEventListener('touchstart', (e) => { startStick(e.changedTouches[0], false); e.preventDefault(); }, { passive: false });
-    const moveStick = (t) => {
-      const R = radius();
-      let dx = t.clientX - sx, dy = t.clientY - sy;
-      const l = Math.hypot(dx, dy);
-      if (l > R) { dx *= R / l; dy *= R / l; }
-      knob.style.transform = `translate(${dx}px, ${dy}px)`;
-      this.move.x = dx / R; this.move.y = -dy / R;
-      // pousser le stick à fond vers l'avant fait courir
-      if (this.move.y > 0.95) this.virtual.add('Sprint'); else if (this.move.y < 0.8 && !this.sprintToggle) this.virtual.delete('Sprint');
-      stick.classList.toggle('sprint', this.virtual.has('Sprint'));
-    };
-    addEventListener('touchmove', (e) => {
-      for (const t of e.changedTouches) {
-        if (t.identifier === stickId) moveStick(t);
-        else if (lookTouches.has(t.identifier)) {
-          const L = lookTouches.get(t.identifier);
-          const dx = t.clientX - L.x, dy = t.clientY - L.y;
-          this.mouseDX += dx * 2.2 * (this.touchLook || 1); this.mouseDY += dy * 2.2 * (this.touchLook || 1);
-          L.moved += Math.abs(dx) + Math.abs(dy);
-          L.x = t.clientX; L.y = t.clientY;
-        }
-      }
-      if (!this.uiOpen) e.preventDefault();
-    }, { passive: false });
-    const endT = (e) => {
-      for (const t of e.changedTouches) {
-        if (t.identifier === stickId) resetStick();
-        const L = lookTouches.get(t.identifier);
-        if (L) {
-          clearTimeout(L.timer);
-          if (L.breaking) { this.buttons &= ~1; }
-          else if (L.moved < 12 && performance.now() - L.t0 < 300) { this.clicks.push(2); } // tap = utiliser/poser
-          lookTouches.delete(t.identifier);
-        }
-      }
-    };
-    addEventListener('touchend', endT); addEventListener('touchcancel', endT);
-    this.canvas.addEventListener('touchstart', (e) => {
-      if (this.uiOpen) return;
-      for (const t of e.changedTouches) {
-        if (stickId === null && this.floatStick && t.clientX < innerWidth * 0.4 && t.clientY > innerHeight * 0.3) { startStick(t, true); continue; }
-        const L = { x: t.clientX, y: t.clientY, moved: 0, t0: performance.now(), breaking: false };
-        // appui long = casser / attaquer
-        L.timer = setTimeout(() => { if (L.moved < 20) { L.breaking = true; this.buttons |= 1; this.clicks.push(0); } }, 280);
-        lookTouches.set(t.identifier, L);
-      }
-      e.preventDefault();
-    }, { passive: false });
-    const btn = (id, code, hold = true) => {
-      const el = root.querySelector(id);
-      if (!el) return;
-      el.addEventListener('touchstart', (e) => {
-        e.preventDefault(); e.stopPropagation();
-        if (hold) this.virtual.add(code);
-        this.pressed.add(code);
-        if (code === 'Space') { const now = performance.now(); if (now - this.lastSpace < 300) this.doubleSpace = true; this.lastSpace = now; }
-        if (handlers && handlers[code]) handlers[code]();
-      }, { passive: false });
-      el.addEventListener('touchend', (e) => { e.preventDefault(); this.virtual.delete(code); }, { passive: false });
-    };
-    btn('#tJump', 'Space'); btn('#tSneak', 'ShiftLeft'); btn('#tInv', 'KeyE', false); btn('#tPause', 'Escape', false);
-    btn('#tAttack', 'TouchAttack', true); btn('#tUse', 'TouchUse', true); btn('#tDrop', 'KeyQ', false); btn('#tChat', 'KeyT', false);
-    btn('#tView', 'F5', false);
-    // bouton de course (bascule)
-    const sp = root.querySelector('#tSprint');
-    if (sp) sp.addEventListener('touchstart', (e) => {
-      e.preventDefault(); e.stopPropagation();
-      this.sprintToggle = !this.sprintToggle;
-      sp.classList.toggle('on', this.sprintToggle);
-      if (this.sprintToggle) this.virtual.add('Sprint'); else this.virtual.delete('Sprint');
-    }, { passive: false });
+    this.touchCtl = new TouchControls(this, root, opts);
   }
 }

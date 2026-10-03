@@ -378,6 +378,7 @@ export class Game {
     if (this.fpsAcc > 0.5) { this.fps = Math.round(this.fpsN / this.fpsAcc); this.fpsAcc = 0; this.fpsN = 0; }
     const inp = this.input;
     inp.pad.update(dt, this);
+    if (inp.touchCtl) inp.touchCtl.update(dt);
     if (!this.running || !this.world) { this.ui.menuFrame && this.ui.menuFrame(dt); inp.endFrame(); return; }
     if (this.demo) { this.demoFrame(dt); inp.endFrame(); return; }
     const p = this.player;

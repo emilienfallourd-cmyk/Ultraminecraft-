@@ -154,24 +154,45 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0b0d; col
 /* -------------------------------------------------------------------- TACTILE */
 #touch { display: none; position: absolute; inset: 0; pointer-events: none; z-index: 5; }
 .touch #touch.active { display: block; }
-#touch { --ts: 1; }
-#tStick { position: absolute; left: max(24px, env(safe-area-inset-left)); bottom: calc(110px * var(--ts)); width: calc(130px * var(--ts)); height: calc(130px * var(--ts)); border-radius: 50%; background: rgba(255, 255, 255, 0.12); border: 2px solid rgba(255, 255, 255, 0.3); pointer-events: auto; }
-#tStick.float { background: rgba(255, 255, 255, 0.18); }
-#tKnob { position: absolute; left: 50%; top: 50%; width: calc(50px * var(--ts)); height: calc(50px * var(--ts)); margin: calc(-25px * var(--ts)) 0 0 calc(-25px * var(--ts)); border-radius: 50%; background: rgba(255, 255, 255, 0.4); }
-#tStick.sprint #tKnob { background: rgba(140, 220, 255, 0.75); box-shadow: 0 0 12px rgba(140, 220, 255, 0.8); }
-.tbtn { position: absolute; width: calc(62px * var(--ts)); height: calc(62px * var(--ts)); border-radius: calc(14px * var(--ts)); background: rgba(0, 0, 0, 0.35); border: 2px solid rgba(255, 255, 255, 0.35); color: #fff; font-size: calc(30px * var(--ts)); display: flex; align-items: center; justify-content: center; pointer-events: auto; }
-.tbtn.on { background: rgba(255, 255, 255, 0.3); }
-.tbtn.small { width: calc(46px * var(--ts)); height: calc(46px * var(--ts)); font-size: calc(22px * var(--ts)); border-radius: calc(10px * var(--ts)); }
-#tJump { right: calc(24px * var(--ts)); bottom: calc(120px * var(--ts)); }
-#tSneak { right: calc(94px * var(--ts)); bottom: calc(60px * var(--ts)); }
-#tAttack { right: calc(94px * var(--ts)); bottom: calc(190px * var(--ts)); }
-#tUse { right: calc(24px * var(--ts)); bottom: calc(260px * var(--ts)); }
-#tSprint { right: calc(164px * var(--ts)); bottom: calc(60px * var(--ts)); }
-#tInv { right: max(12px, env(safe-area-inset-right)); top: 12px; }
-#tPause { right: calc(max(12px, env(safe-area-inset-right)) + 52px * var(--ts)); top: 12px; }
-#tDrop { right: calc(max(12px, env(safe-area-inset-right)) + 104px * var(--ts)); top: 12px; }
-#tChat { right: calc(max(12px, env(safe-area-inset-right)) + 156px * var(--ts)); top: 12px; }
-#tView { right: calc(max(12px, env(safe-area-inset-right)) + 208px * var(--ts)); top: 12px; }
+#touch { --ts: 1; --to: 0.85; opacity: var(--to); }
+/* pads : déplacement (gauche) et caméra (droite) */
+.tpad { position: absolute; bottom: calc(26px + env(safe-area-inset-bottom)); width: calc(136px * var(--ts)); height: calc(136px * var(--ts)); border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.12) 0 55%, rgba(0, 0, 0, 0.22) 70%); border: 2px solid rgba(255, 255, 255, 0.32); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25); pointer-events: auto; }
+#tMove { left: calc(26px + env(safe-area-inset-left)); }
+#tLook { right: calc(26px + env(safe-area-inset-right)); }
+.tpad.active { border-color: rgba(255, 255, 255, 0.55); }
+.tknob { position: absolute; left: 50%; top: 50%; width: calc(54px * var(--ts)); height: calc(54px * var(--ts)); margin: calc(-27px * var(--ts)) 0 0 calc(-27px * var(--ts)); border-radius: 50%;
+  background: rgba(255, 255, 255, 0.42); border: 2px solid rgba(255, 255, 255, 0.6); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); }
+.tpad.look .tknob { width: calc(40px * var(--ts)); height: calc(40px * var(--ts)); margin: calc(-20px * var(--ts)) 0 0 calc(-20px * var(--ts)); background: rgba(255, 255, 255, 0.28); }
+.tpad.sprint .tknob { background: rgba(140, 220, 255, 0.8); border-color: #bfeaff; box-shadow: 0 0 14px rgba(140, 220, 255, 0.9); }
+/* petites flèches du pad caméra */
+.tpad.look i { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; border: solid rgba(255, 255, 255, 0.45); border-width: 2px 2px 0 0; }
+.tpad.look i:nth-child(1) { transform: translate(-50%, -50%) translateY(calc(-46px * var(--ts))) rotate(-45deg); }
+.tpad.look i:nth-child(2) { transform: translate(-50%, -50%) translateX(calc(46px * var(--ts))) rotate(45deg); }
+.tpad.look i:nth-child(3) { transform: translate(-50%, -50%) translateY(calc(46px * var(--ts))) rotate(135deg); }
+.tpad.look i:nth-child(4) { transform: translate(-50%, -50%) translateX(calc(-46px * var(--ts))) rotate(-135deg); }
+#touch.nolook #tLook { display: none; }
+/* boutons ronds discrets */
+.tbtn { position: absolute; width: calc(62px * var(--ts)); height: calc(62px * var(--ts)); border-radius: 50%; background: rgba(0, 0, 0, 0.22); border: 2px solid rgba(255, 255, 255, 0.4);
+  display: flex; align-items: center; justify-content: center; pointer-events: auto; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25); }
+.tbtn svg { width: 56%; height: 56%; fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5)); }
+.tbtn.down { background: rgba(255, 255, 255, 0.3); }
+.tbtn.on { background: rgba(255, 255, 255, 0.35); border-color: #fff; }
+.tbtn.small { width: calc(40px * var(--ts)); height: calc(40px * var(--ts)); opacity: 0.8; }
+#tJump { right: calc(26px + 37px * var(--ts) + env(safe-area-inset-right)); bottom: calc(42px + 136px * var(--ts) + env(safe-area-inset-bottom)); }
+#tSneak { left: calc(26px + 37px * var(--ts) + env(safe-area-inset-left)); bottom: calc(42px + 136px * var(--ts) + env(safe-area-inset-bottom)); }
+#tPause { right: max(12px, env(safe-area-inset-right)); top: max(10px, env(safe-area-inset-top)); }
+/* anneau de l'appui long (avant de commencer à casser) */
+#tHold { position: absolute; display: none; width: 58px; height: 58px; margin: -29px 0 0 -29px; pointer-events: none; }
+#tHold svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+#tHold circle { fill: rgba(0, 0, 0, 0.15); stroke: rgba(255, 255, 255, 0.9); stroke-width: 3; stroke-dasharray: 100.6; stroke-dashoffset: 100.6; }
+#tHold.go circle { stroke-dashoffset: 0; transition: stroke-dashoffset 0.3s linear; }
+/* bouton d'inventaire au bout de la barre d'objets */
+#tMore { position: absolute; left: calc(184 * var(--hs)); top: calc(1 * var(--hs)); width: calc(20 * var(--hs)); height: calc(20 * var(--hs)); background: rgba(0, 0, 0, 0.45); border: calc(1 * var(--hs)) solid #000;
+  box-shadow: inset 0 0 0 calc(1 * var(--hs)) #8b8b8b; display: flex; align-items: center; justify-content: center; gap: calc(1.5 * var(--hs)); pointer-events: auto; }
+#tMore span { width: calc(2.5 * var(--hs)); height: calc(2.5 * var(--hs)); background: #fff; box-shadow: calc(0.5 * var(--hs)) calc(0.5 * var(--hs)) 0 #3f3f3f; }
+/* visée au doigt : pas de viseur, comme Minecraft sur mobile */
+body.aim-finger #crosshair { display: none; }
 .touch #bottom { --hs: calc(2px * var(--ui, 1)); }
 
 @media (max-width: 700px), (max-height: 520px) {

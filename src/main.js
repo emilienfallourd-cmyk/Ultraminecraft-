@@ -10,7 +10,7 @@ const DEFAULTS = {
   renderDistance: 8, shadows: 1, ssr: true, volumetric: true, bloom: true, clouds: true, renderScale: 1, particles: 2,
   fov: 75, sensitivity: 1, brightness: 1, volume: 0.8, musicVolume: 0.5, sfxVolume: 1, viewBob: true, difficulty: 2,
   mobs: true, keepInventory: false, invertY: false, advancedTooltips: false, chunkBudget: 7, showHud: true,
-  dynRes: 0, fpsCap: 0, uiScale: 1, touchScale: 1,
+  dynRes: 0, fpsCap: 0, uiScale: 1, touchScale: 1, touchAim: 'finger', lookPad: true, touchOpacity: 0.85,
 };
 
 // premier lancement sur mobile : mode graphique choisi selon la puissance de l'appareil
@@ -44,7 +44,8 @@ const App = {
     g.input.invertY = s.invertY;
     document.documentElement.style.setProperty('--ui', String(s.uiScale || 1));
     const t = document.getElementById('touch');
-    if (t) t.style.setProperty('--ts', String(s.touchScale || 1));
+    if (t) { t.style.setProperty('--ts', String(s.touchScale || 1)); t.style.setProperty('--to', String(s.touchOpacity ?? 0.85)); t.classList.toggle('nolook', s.lookPad === false); }
+    document.body.classList.toggle('aim-finger', isTouch && s.touchAim !== 'cross');
   },
 
   async boot() {
@@ -70,10 +71,11 @@ const App = {
     this.applySettings();
     if (isTouch) {
       g.input.setupTouch(document.getElementById('app'), {
-        KeyE: () => { if (ui.screen) ui.closeScreen(); else if (g.running && !g.demo) ui.openInventory(); },
-        Escape: () => { if (ui.screen) ui.closeScreen(); else if (ui.menus.open === 'pause') ui.menus.resume(); else ui.menus.pause(); },
-        KeyT: () => ui.openChat(''),
-        F5: () => { g.thirdPerson = (g.thirdPerson + 1) % 3; },
+        settings: this.settings, game: g,
+        handlers: {
+          KeyE: () => { if (ui.screen) ui.closeScreen(); else if (g.running && !g.demo) ui.openInventory(); },
+          Escape: () => { if (ui.screen) ui.closeScreen(); else if (ui.menus.open === 'pause') ui.menus.resume(); else ui.menus.pause(); },
+        },
       });
     }
     g.start();
