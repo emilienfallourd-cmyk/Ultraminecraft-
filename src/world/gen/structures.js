@@ -5,6 +5,7 @@ import { RNG, hash2 } from '../../util/noise.js';
 import { BLOCK as K, BLOCKS } from '../../blocks/blocks.js';
 import { BIOME as BI } from '../biomes.js';
 import { lootChest } from './loot.js';
+import { endCityLayout, drawEndCityPiece } from './endcity.js';
 
 const idx = (x, y, z) => x | (z << 4) | (y << 8);
 
@@ -620,44 +621,26 @@ function endCityPlan(gen, rx, rz) {
   let plan = null;
   const x = rx * 320 + 60 + rng.int(200), z = rz * 320 + 60 + rng.int(200);
   if (Math.hypot(x, z) > 850 && rng.chance(0.6)) {
-    const top = gen.surfaceAt ? gen.surfaceAt(x, z) : -1;
-    if (top > 30) plan = { x, z, y: top + 1, seed: rng.int(1e9) };
+    // comme Minecraft : uniquement sur un terrain assez haut et assez large
+    let ok = true, top = 1e9;
+    for (const [dx, dz] of [[0, 0], [6, 6], [-6, 6], [6, -6], [-6, -6]]) { const t = gen.surfaceAt ? gen.surfaceAt(x + dx, z + dz) : -1; if (t < 50) { ok = false; break; } top = Math.min(top, t); }
+    if (ok) {
+      plan = { x, z, y: top + 1, seed: rng.int(1e9) };
+      const L = endCityLayout(x, top + 1, z, plan.seed);
+      plan.pieces = L.pieces; plan.bb = L.bb; plan.ship = L.ship;
+    }
   }
   gen.planCache.set(key, plan);
   return plan;
 }
 
 function buildEndCity(S, p) {
-  const rng = new RNG(p.seed);
-  const P = K.purpur_block, PP = K.purpur_pillar, EB = K.end_stone_bricks;
-  let y = p.y;
-  const floors = 4 + rng.int(3);
-  for (let f = 0; f < floors; f++) {
-    const r = f === floors - 1 ? 5 : 3 + (f % 2);
-    for (let x = p.x - r; x <= p.x + r; x++) for (let z = p.z - r; z <= p.z + r; z++) for (let yy = y; yy <= y + 5; yy++) {
-      const edge = Math.abs(x - p.x) === r || Math.abs(z - p.z) === r;
-      const corner = Math.abs(x - p.x) === r && Math.abs(z - p.z) === r;
-      if (yy === y) S.set(x, yy, z, (x + z) % 2 ? P : EB);
-      else if (corner) S.set(x, yy, z, PP);
-      else if (edge) S.set(x, yy, z, yy === y + 3 && (x === p.x || z === p.z) ? K.magenta_stained_glass || K.purple_stained_glass : P);
-      else S.set(x, yy, z, 0);
-    }
-    S.set(p.x + r - 1, y + 4, p.z, K.end_rod);
-    S.set(p.x - r + 1, y + 4, p.z, K.end_rod);
-    // escalier central
-    for (let k = 0; k < 5; k++) S.set(p.x + [1, 1, 0, -1, -1][k], y + 1 + k, p.z + [0, 1, 1, 1, 0][k], K.purpur_stairs, k % 4);
-    y += 6;
+  const x0 = S.bx, z0 = S.bz;
+  for (const piece of p.pieces) {
+    const b = piece.bb;
+    if (b[3] < x0 - 1 || b[0] > x0 + 16 || b[5] < z0 - 1 || b[2] > z0 + 16) continue;
+    drawEndCityPiece(S, piece);
   }
-  for (let x = p.x - 5; x <= p.x + 5; x++) for (let z = p.z - 5; z <= p.z + 5; z++) if ((x + z) % 3 === 0 && (Math.abs(x - p.x) === 5 || Math.abs(z - p.z) === 5)) S.set(x, y, z, K.end_rod);
-  // trésor : coffre avec élytres garanties
-  const cy = y - 5;
-  if (S.in(p.x + 3, p.z + 3)) {
-    S.set(p.x + 3, cy, p.z + 3, K.chest, 0);
-    const items = lootChest('end_city', rng);
-    items[13] = { id: 'elytra', count: 1 };
-    S.be(p.x + 3, cy, p.z + 3, { type: 'chest', items });
-  }
-  S.mob(p.x, p.y + 7, p.z, 'shulker'); S.mob(p.x + 2, p.y + 13, p.z - 2, 'shulker');
 }
 
 // ================================================== NOUVELLES STRUCTURES
@@ -981,9 +964,12 @@ export function placeEndStructures(gen, cx, cz, blocks, meta) {
     if (S.in(0, 0) || S.in(4, 4) || S.in(-4, -4) || S.in(4, -4) || S.in(-4, 4)) buildExitFountain(S, gen.fountainY || 64);
   }
   const R = 320;
-  for (let rx = Math.floor((bx - 32) / R); rx <= Math.floor((bx + 48) / R); rx++) for (let rz = Math.floor((bz - 32) / R); rz <= Math.floor((bz + 48) / R); rz++) {
+  for (let rx = Math.floor((bx - 200) / R); rx <= Math.floor((bx + 216) / R); rx++) for (let rz = Math.floor((bz - 200) / R); rz <= Math.floor((bz + 216) / R); rz++) {
     const plan = endCityPlan(gen, rx, rz);
-    if (plan && Math.abs(plan.x - bx - 8) < 24 && Math.abs(plan.z - bz - 8) < 24) buildEndCity(S, plan);
+    if (!plan) continue;
+    const b = plan.bb;
+    if (b[3] < bx - 1 || b[0] > bx + 16 || b[5] < bz - 1 || b[2] > bz + 16) continue;
+    buildEndCity(S, plan);
   }
   return bes;
 }
@@ -992,3 +978,4 @@ export { Clip };
 export const _villagePlan = villagePlan;
 export const _ancientPlan = ancientCityPlan;
 export const _fortressPlan = fortressPlan;
+export const _endCityPlan = endCityPlan;

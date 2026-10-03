@@ -262,11 +262,56 @@ export const MODELS = {
       ],
     };
   },
-  end_rod() {
+  end_rod(meta) {
+    // orientation sur 6 directions : 0 haut, 1 bas, 2+f horizontal (vers f)
+    const { rot, rotY } = orient6(meta & 7);
     return {
       els: [
-        box([7, 1, 7], [9, 16, 9], 'end_rod', { uv: [[0, 0, 2, 15], [0, 0, 2, 15], [2, 0, 4, 2], [2, 0, 4, 2], [0, 0, 2, 15], [0, 0, 2, 15]], noCull: true, emissive: true }),
-        box([6, 0, 6], [10, 1, 10], 'end_rod', { uv: [[2, 6, 6, 7], [2, 6, 6, 7], [2, 2, 6, 6], [2, 2, 6, 6], [2, 6, 6, 7], [2, 6, 6, 7]], noCull: true }),
+        withRot(box([7, 1, 7], [9, 16, 9], 'end_rod', { uv: [[0, 0, 2, 15], [0, 0, 2, 15], [2, 0, 4, 2], [2, 0, 4, 2], [0, 0, 2, 15], [0, 0, 2, 15]], noCull: true, emissive: true }), rot),
+        withRot(box([6, 0, 6], [10, 1, 10], 'end_rod', { uv: [[2, 6, 6, 7], [2, 6, 6, 7], [2, 2, 6, 6], [2, 2, 6, 6], [2, 6, 6, 7], [2, 6, 6, 7]], noCull: true }), rot),
+      ],
+      rotY,
+    };
+  },
+  dragon_head(meta) {
+    const wall = meta & 4;
+    const y = wall ? 4 : 0, z = wall ? -3 : 0;
+    const t = 'dragon_head', f = 'dragon_head_face', sn = 'dragon_snout';
+    return {
+      els: [
+        box([3, y, 3 + z], [13, y + 9, 13 + z], [t, t, t, t, f, t], { noCull: true }),
+        box([5, y, 13 + z], [11, y + 4, 18 + z], [sn, sn, sn, sn, 'dragon_snout_front', sn], { noCull: true }),
+        box([4, y + 9, 4 + z], [6, y + 12, 7 + z], 'dragon_horn', { noCull: true }),
+        box([10, y + 9, 4 + z], [12, y + 12, 7 + z], 'dragon_horn', { noCull: true }),
+        box([6, y + 4, 15 + z], [7, y + 5, 17 + z], 'dragon_horn', { noCull: true }),
+        box([9, y + 4, 15 + z], [10, y + 5, 17 + z], 'dragon_horn', { noCull: true }),
+      ],
+      rotY: facingRot(meta),
+    };
+  },
+  item_frame(meta, b) {
+    const els = [box([2, 2, 0], [14, 14, 1], ['item_frame', 'item_frame', 'item_frame', 'item_frame', 'item_frame_back', 'item_frame'], { noCull: true })];
+    if (b.frameItem) els.push(plane([3, 3, 2], [13, 13, 2], 'elytra_in_frame'));
+    return { els, rotY: facingRot(meta) };
+  },
+  banner(meta) {
+    return {
+      els: [
+        box([1, -13, 0], [15, 14, 1], 'end_banner', { uv: [[0, 0, 1, 16], [0, 0, 1, 16], [0, 0, 16, 1], [0, 15, 16, 16], [0, 0, 16, 16], [0, 0, 16, 16]], noCull: true }),
+        box([0, 14, 0], [16, 15, 2], 'dark_oak_planks', { noCull: true }),
+      ],
+      rotY: facingRot(meta),
+    };
+  },
+  brewing_stand() {
+    const s = 'brewing_stand', bs = 'brewing_stand_base';
+    return {
+      els: [
+        box([7, 0, 7], [9, 14, 9], s, { uv: [[7, 2, 9, 16], [7, 2, 9, 16], [7, 2, 9, 4], [7, 2, 9, 4], [7, 2, 9, 16], [7, 2, 9, 16]], noCull: true, emissive: true }),
+        box([9, 0, 5], [15, 2, 11], bs, { noCull: true }), box([2, 0, 1], [8, 2, 7], bs, { noCull: true }), box([2, 0, 9], [8, 2, 15], bs, { noCull: true }),
+        plane([8, 0, 8], [16, 16, 8], s, { uv: [8, 0, 16, 16] }),
+        plane([8, 0, 1], [8, 16, 8], s, { uv: [0, 0, 8, 16], rot: { axis: 'y', angle: -45, origin: [8, 8, 8] } }),
+        plane([8, 0, 8], [8, 16, 15], s, { uv: [0, 0, 8, 16], rot: { axis: 'y', angle: 45, origin: [8, 8, 8] } }),
       ],
     };
   },
@@ -532,7 +577,10 @@ export const BOXES = {
   rail: () => [[0, 0, 0, 1, 2 / 16, 1]],
   end_portal_frame: () => [[0, 0, 0, 1, 13 / 16, 1]],
   dragon_egg: () => [[1 / 16, 0, 1 / 16, 15 / 16, 1, 15 / 16]],
-  end_rod: () => [[6 / 16, 0, 6 / 16, 10 / 16, 1, 10 / 16]],
+  end_rod: (m) => [orientBox6([6 / 16, 0, 6 / 16, 10 / 16, 1, 10 / 16], m & 7)],
+  dragon_head: (m) => (m & 4) ? [rotBox([3 / 16, 4 / 16, 0, 13 / 16, 13 / 16, 15 / 16], FACING_ROT[m & 3])] : [[3 / 16, 0, 3 / 16, 13 / 16, 9 / 16, 13 / 16]],
+  frame: (m) => [rotBox([2 / 16, 2 / 16, 0, 14 / 16, 14 / 16, 1 / 16], FACING_ROT[m & 3])],
+  brewing: () => [[1 / 16, 0, 1 / 16, 15 / 16, 14 / 16, 15 / 16]],
   chorus: () => [[3 / 16, 0, 3 / 16, 13 / 16, 1, 13 / 16]],
   skull: () => [[4 / 16, 0, 4 / 16, 12 / 16, 0.5, 12 / 16]],
   anvil: () => [[0, 0, 0, 1, 1, 1]],

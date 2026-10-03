@@ -391,6 +391,14 @@ autumnLeaves('orange_maple_leaves', 'Feuilles d\'érable orangées', 'maple_sapl
 autumnLeaves('golden_birch_leaves', 'Feuilles de bouleau dorées', 'birch_sapling');
 B('maple_sapling', 'Pousse d\'érable', { ...flower, wave: 0, extra: { sapling: 'maple' } });
 B('leaf_litter', 'Litière de feuilles', { shape: 'model', model: 'petals', render: 'cutout', solid: false, opaque: false, hardness: 0, replaceable: true, sound: 'grass', support: 'plant', cat: 'nature' });
+// ------------------------------------------------------------ CITÉS DE L'END
+B('magenta_stained_glass', 'Verre magenta', { render: 'translucent', opaque: false, hardness: 0.3, sound: 'glass', drops: null, cat: 'deco', cullSame: true });
+B('purpur_slab', 'Dalle de purpur', { ...stone, shape: 'model', model: 'slab', boxes: 'slab', opaque: false, tex: 'purpur_block', hardness: 2 });
+B('dragon_head', 'Tête de dragon', { shape: 'model', model: 'dragon_head', boxes: 'dragon_head', opaque: false, facing: true, hardness: 1, sound: 'stone', cat: 'deco', tex: 'dragon_head' });
+B('item_frame', 'Cadre', { shape: 'model', model: 'item_frame', boxes: 'frame', render: 'cutout', solid: false, opaque: false, hardness: 0.3, sound: 'wood', support: 'wall', interact: 'frame', cat: 'deco', tex: 'item_frame' });
+B('elytra_frame', 'Cadre avec élytres', { shape: 'model', model: 'item_frame', boxes: 'frame', render: 'cutout', solid: false, opaque: false, hardness: 0.3, sound: 'wood', support: 'wall', interact: 'frame', item: false, drops: ['item_frame', 'elytra'], tex: 'item_frame', extra: { frameItem: 'elytra' } });
+B('end_banner', 'Bannière de l\'End', { shape: 'model', model: 'banner', boxes: 'frame', render: 'cutout', solid: false, opaque: false, hardness: 1, sound: 'wool', support: 'wall', cat: 'deco', tex: 'end_banner' });
+B('brewing_stand', 'Alambic', { shape: 'model', model: 'brewing_stand', boxes: 'brewing', render: 'cutout', opaque: false, hardness: 0.5, tool: 'pickaxe', sound: 'metal', light: 1, cat: 'func', tex: 'brewing_stand' });
 // blocs existants reliés à la redstone
 BLOCK_BY_KEY.redstone_block.rs = 'block';
 BLOCK_BY_KEY.redstone_block.cat = 'redstone';

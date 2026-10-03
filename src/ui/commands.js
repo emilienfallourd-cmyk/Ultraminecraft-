@@ -171,7 +171,15 @@ export function runCommand(game, line) {
           return ERR(b.name + ' introuvable dans un rayon de 4000 blocs');
         }
       }
-      if (t === 'end_city' && game.dim === 2) return OK('Les cités de l\'End se trouvent sur les îles extérieures (à plus de 850 blocs du centre).');
+      if ((t === 'end_city' || t === 'cite_end' || t === 'endcity') && game.dim === 2) {
+        let best = null;
+        const R = 320, rx0 = Math.floor(p.x / R), rz0 = Math.floor(p.z / R);
+        for (let rx = rx0 - 6; rx <= rx0 + 6; rx++) for (let rz = rz0 - 6; rz <= rz0 + 6; rz++) {
+          const plan = _endCityPlan(gen, rx, rz);
+          if (plan) { const d = Math.hypot(plan.x - p.x, plan.z - p.z); if (!best || d < best[2]) best = [plan.x, plan.z, d, plan.ship]; }
+        }
+        return best ? OK(`Cité de l'End la plus proche : ${best[0]} ~ ${best[1]} (${Math.round(best[2])} blocs)${best[3] ? ', avec un vaisseau' : ''}`) : ERR('Aucune cité de l\'End à proximité');
+      }
       const extra = { outpost: [_outpostPlan, 320, 'Avant-poste de pillards'], avant_poste: [_outpostPlan, 320, 'Avant-poste de pillards'], temple: [_jungleTemplePlan, 256, 'Temple de la jungle'], jungle_temple: [_jungleTemplePlan, 256, 'Temple de la jungle'], mineshaft: [_mineshaftPlan, 160, 'Mine abandonnée'], mine: [_mineshaftPlan, 160, 'Mine abandonnée'], monument: [_monumentPlan, 512, 'Monument océanique'] }[t];
       if (extra && game.dim === 0) {
         const [fn, R, label] = extra;
@@ -190,5 +198,5 @@ export function runCommand(game, line) {
   }
 }
 
-import { _villagePlan as villagePlanPublic, _ancientPlan as ancientPlanPublic, _fortressPlan as fortressPlanPublic, _outpostPlan, _jungleTemplePlan, _mineshaftPlan, _monumentPlan } from '../world/gen/structures.js';
+import { _villagePlan as villagePlanPublic, _ancientPlan as ancientPlanPublic, _fortressPlan as fortressPlanPublic, _outpostPlan, _jungleTemplePlan, _mineshaftPlan, _monumentPlan, _endCityPlan } from '../world/gen/structures.js';
 export { strongholdPositions };

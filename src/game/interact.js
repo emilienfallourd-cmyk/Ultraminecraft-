@@ -549,6 +549,9 @@ export class Interaction {
       else meta = (lf + 2) % 4; // face vers le joueur
     }
     if (def.model === 'slab') meta = t.face === 3 || (t.face !== 2 && hitY > 0.5) ? 1 : 0;
+    // barre de l'End orientée selon la face ; cadres et bannières contre un mur
+    if (def.model === 'end_rod') meta = t.face === 2 ? 0 : t.face === 3 ? 1 : 2 + FACE_TO_FACING[t.face];
+    if (def.support === 'wall') { if (t.face < 2 || t.face > 3) meta = FACE_TO_FACING[t.face]; else return; }
     if (def.model === 'torch') {
       if (t.face === 2) meta = 0;
       else if (t.face === 3) return;
@@ -715,6 +718,22 @@ export class Interaction {
         return false;
       }
       case 'eye': return false;
+      case 'frame': {
+        // cadre : reprendre les élytres, ou en accrocher
+        if (def.frameItem) {
+          g.dropItem(new ItemStack(ITEM[def.frameItem], 1), x + 0.5, y + 0.5, z + 0.5);
+          w.setBlock(x, y, z, K.item_frame, w.getMeta(x, y, z));
+          g.audio.play('equip', x + 0.5, y + 0.5, z + 0.5);
+          return true;
+        }
+        if (held && held.id === ITEM.elytra) {
+          w.setBlock(x, y, z, K.elytra_frame, w.getMeta(x, y, z));
+          if (!p.creative) p.consumeHeld(1);
+          g.audio.play('equip', x + 0.5, y + 0.5, z + 0.5);
+          return true;
+        }
+        return false;
+      }
       case 'lever': case 'button': case 'repeater': case 'daylight':
         return g.logic.redstone.use(x, y, z, t.id);
     }

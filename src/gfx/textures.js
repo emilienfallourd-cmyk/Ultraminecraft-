@@ -1162,7 +1162,7 @@ const glass = (col, a) => (t) => {
   t.flatNormal = true;
 };
 P('glass', glass(null, 0.08));
-for (const c of ['white', 'light_blue', 'lime', 'pink', 'purple', 'red', 'black', 'yellow']) P(c + '_stained_glass', glass(DYE[c], 0.42));
+for (const c of ['white', 'light_blue', 'lime', 'pink', 'purple', 'red', 'black', 'yellow', 'magenta']) P(c + '_stained_glass', glass(DYE[c], 0.42));
 
 // --------------------------------------------------------------- PLANTES
 const GREEN = [[120, 120, 120], [150, 150, 150], [175, 175, 175], [200, 200, 200]];
@@ -1452,6 +1452,45 @@ const skullTex = (faceDetails) => (t) => {
     for (let x = 7; x < 25; x += 3) t.rect(x, 24, x + 2, 28, hex('#5a5a5a'), 1, 0.7);
   }
 };
+// tête de dragon, cadre, bannière de l'End, alambic
+const dragonScales = (t, base = '#1c1a20') => { t.each((x, y) => { const sc = ((x >> 2) + (y >> 2)) % 2; const v = t.n(0).at(x, y, 8); t.set(x, y, mul(mix(hex(base), hex('#34303c'), v), sc ? 0.85 : 1.05)); t.setH(x, y, sc ? 0.4 : 0.6); t.setS(x, y, 0.35); }); };
+P('dragon_head', (t) => dragonScales(t));
+P('dragon_head_face', (t) => { dragonScales(t); t.rect(4, 12, 11, 16, hex('#d68fe8'), 1, 0.8); t.rect(21, 12, 28, 16, hex('#d68fe8'), 1, 0.8); for (let y = 12; y < 16; y++) for (let x = 4; x < 28; x++) if (x < 11 || x >= 21) t.setE(x, y, 0.8); t.rect(6, 13, 9, 15, hex('#f8e8ff')); t.rect(23, 13, 26, 15, hex('#f8e8ff')); });
+P('dragon_snout', (t) => dragonScales(t, '#24212a'));
+P('dragon_snout_front', (t) => { dragonScales(t, '#24212a'); t.rect(6, 6, 10, 10, hex('#0a0a0c')); t.rect(22, 6, 26, 10, hex('#0a0a0c')); for (let x = 3; x < 29; x += 4) t.rect(x, 24, x + 2, 29, hex('#e8e4d8'), 1, 0.8); });
+P('dragon_horn', (t) => noisy(t, '#bdb5a5', { p: 8, spread: 0.2 }));
+P('item_frame', (t) => { planks(t, '#7a5a34'); frame(t, hex('#5a4024'), 3); });
+P('item_frame_back', (t) => { t.each((x, y) => { const v = t.n(0).at(x, y, 6); t.set(x, y, mix(hex('#8a5a32'), hex('#a8703e'), v)); t.setS(x, y, 0.3); }); frame(t, hex('#5a4024'), 4); t.each((x, y) => { if (x > 3 && x < 28 && y > 3 && y < 28 && (x + y) % 9 === 0) t.shadePix(x, y, 0.8); }); });
+P('elytra_in_frame', (t) => {
+  t.clear(); t.each((x, y) => t.set(x, y, [0, 0, 0], 0)); t.flatNormal = true;
+  for (const side of [-1, 1]) for (let y = 3; y < 30; y++) {
+    const w = Math.round(11 * Math.sin(Math.min(1, (y - 2) / 22) * Math.PI * 0.62) + 2);
+    for (let k = 0; k < w; k++) {
+      const x = 16 + side * (1 + k);
+      const edge = k === w - 1 || y === 3;
+      const vein = k % 4 === 0;
+      t.set(x, y, edge ? hex('#3b3646') : vein ? hex('#6f6a84') : mix(hex('#8d88a6'), hex('#b2aec8'), (y % 6) / 6));
+    }
+  }
+});
+P('end_banner', (t) => {
+  // bannière magenta à motif sombre (étirée sur deux blocs : motif compressé verticalement)
+  t.each((x, y) => { const v = t.n(0).at(x, y, 6); t.set(x, y, mix(hex('#9a3a9a'), hex('#b54cb5'), v)); t.setS(x, y, 0.15); t.setH(x, y, 0.55); });
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const cx = Math.abs(x - 15.5);
+    if (y > 4 && y < 9 && cx < 13) t.set(x, y, hex('#1e1222'));
+    if (y >= 10 && y < 22 && cx < 3 + (y - 10) * 0.55 && cx > (y - 10) * 0.55 - 1) t.set(x, y, hex('#1e1222'));
+    if (y >= 24 && y < 27 && cx < 12) t.set(x, y, hex('#1e1222'));
+    if (y >= 27 && (x % 4 === 1)) t.set(x, y, hex('#6a206a'));
+  }
+});
+P('brewing_stand', (t) => {
+  t.clear(); t.each((x, y) => t.set(x, y, [0, 0, 0], 0)); t.flatNormal = true;
+  for (let y = 4; y < 32; y++) { t.set(15, y, hex('#e8a020')); t.set(16, y, hex('#ffd060')); t.setE(15, y, 0.7); t.setE(16, y, 0.7); }
+  for (const cx of [5, 26]) { t.rect(cx - 3, 18, cx + 3, 28, hex('#cfe0ef'), 0.9); t.rect(cx - 2, 22, cx + 2, 27, hex('#e04060')); t.rect(cx - 1, 15, cx + 1, 18, hex('#9a7a5a')); }
+  t.rect(4, 8, 28, 10, hex('#5a5a5a'));
+});
+P('brewing_stand_base', (t) => { noisy(t, '#6a6a6a', { p: 8, spread: 0.3 }); frame(t, hex('#3a3a3a'), 1); });
 P('wither_skull', skullTex(true));
 P('wither_skull_side', skullTex(false));
 P('wither_skull_top', skullTex(false));
